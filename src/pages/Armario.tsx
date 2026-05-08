@@ -1,0 +1,152 @@
+import { useMemo, useState } from 'react'
+import { Plus, Settings2, Folder } from 'lucide-react'
+import { useClothes } from '@/hooks/useClothes'
+import { useCategories } from '@/hooks/useCategories'
+import { useOutfits, OutfitWithItems } from '@/hooks/useOutfits'
+import { useSearchStore } from '@/store/search'
+import ClotheCard from '@/components/armario/ClotheCard'
+import ClotheForm from '@/components/armario/ClotheForm'
+import ClotheDetail from '@/components/armario/ClotheDetail'
+import CategoryManager from '@/components/armario/CategoryManager'
+import OutfitForm from '@/components/armario/OutfitForm'
+import type { Clothe } from '@/types/database'
+import { cx } from '@/lib/utils'
+
+type Tab = 'prendas' | 'outfits'
+
+export default function Armario() {
+  const [tab, setTab] = useState<Tab>('prendas')
+  const { data: clothes = [], isLoading } = useClothes(['closet'])
+  const { data: categories = [] } = useCategories()
+  const { data: outfits = [] } = useOutfits()
+  const { query } = useSearchStore()
+
+  const [filterCat, setFilterCat] = useState<string | null>(null)
+
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<Clothe | null>(null)
+  const [detailOpen, setDetailOpen] = useState(false)
+  const [selected, setSelected] = useState<Clothe | null>(null)
+  const [catModal, setCatModal] = useState(false)
+  const [outfitFormOpen, setOutfitFormOpen] = useState(false)
+  const [outfitEditing, setOutfitEditing] = useState<OutfitWithItems | null>(null)
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return clothes.filter((c) => {
+      if (filterCat && c.category_id !== filterCat) return false
+      if (!q) return true
+      const cat = categories.find((cc) => cc.id === c.category_id)
+      return (
+        c.name.toLowerCase().includes(q) ||
+        c.tags.some((t) => t.toLowerCase().includes(q)) ||
+        cat?.name.toLowerCase().includes(q)
+      )
+    })
+  }, [clothes, query, filterCat, categories])
+
+  const catMap = useMemo(() => Object.fromEntries(categories.map((c) => [c.id, c])), [categories])
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Mi Armario</h1>
+          <p className="text-sm text-gray-500">{clothes.length} prendas · {outfits.length} outfits</p>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={() => setCatModal(true)} className="btn-secondary" title="Categorías">
+            <Settings2 className="w-4 h-4" />
+          </button>
+          {tab === 'prendas' ? (
+            <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
+              <Plus className="w-4 h-4" /> Añadir
+            </button>
+          ) : (
+            <button onClick={() => { setOutfitEditing(null); setOutfitFormOpen(true) }} className="btn-primary">
+              <Plus className="w-4 h-4" /> Outfit
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="flex gap-2 border-b border-gray-200">
+        {(['prendas', 'outfits'] as Tab[]).map((t) => (
+          <button key={t} onClick={() => setTab(t)}
+            className={cx('px-3 py-2 text-sm font-medium border-b-2 -mb-[1px]',
+              tab === t ? 'border-brand-700 text-brand-700' : 'border-transparent text-gray-500')}>
+            {t === 'prendas' ? 'Prendas' : 'Outfits'}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'prendas' && (
+        <>
+          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
+            <button onClick={() => setFilterCat(null)}
+              className={cx('chip whitespace-nowrap', filterCat === null ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200')}>
+              Todas
+            </button>
+            {categories.map((c) => (
+              <button key={c.id} onClick={() => setFilterCat(c.id === filterCat ? null : c.id)}
+                className={cx('chip whitespace-nowrap', filterCat === c.id ? 'text-white' : 'bg-white border border-gray-200')}
+                style={filterCat === c.id ? { background: c.color } : undefined}>
+                {c.name}
+              </button>
+            ))}
+          </div>
+
+          {isLoading ? (
+            <p className="text-center text-gray-500 py-12">Cargando…</p>
+          ) : filtered.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-gray-500">No hay prendas. ¡Añade la primera!</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filtered.map((c) => (
+                <ClotheCard key={c.id} clothe={c} category={c.category_id ? catMap[c.category_id] : undefined}
+                  onClick={() => { setSelected(c); setDetailOpen(true) }} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {tab === 'outfits' && (
+        outfits.length === 0 ? (
+          <div className="text-center py-16">
+            <Folder className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-500">Aún no has creado outfits.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {outfits.map((o) => {
+              const previews = o.clothe_ids.slice(0, 4)
+                .map((id) => clothes.find((c) => c.id === id)?.image_url).filter(Boolean) as string[]
+              return (
+                <button key={o.id} onClick={() => { setOutfitEditing(o); setOutfitFormOpen(true) }} className="card overflow-hidden text-left">
+                  <div className="aspect-square grid grid-cols-2 gap-px bg-gray-100">
+                    {previews.length > 0 ? previews.map((src, i) => (
+                      <img key={i} src={src} alt="" className="w-full h-full object-cover" />
+                    )) : <div className="col-span-2 row-span-2 flex items-center justify-center text-gray-300">Sin prendas</div>}
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-sm font-medium truncate">{o.name}</p>
+                    <p className="text-xs text-gray-500">{o.clothe_ids.length} prendas</p>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )
+      )}
+
+      <ClotheForm open={formOpen} onClose={() => setFormOpen(false)} clothe={editing} />
+      <ClotheDetail open={detailOpen} onClose={() => setDetailOpen(false)} clothe={selected}
+        onEdit={() => { setEditing(selected); setDetailOpen(false); setFormOpen(true) }} />
+      <CategoryManager open={catModal} onClose={() => setCatModal(false)} />
+      <OutfitForm open={outfitFormOpen} onClose={() => setOutfitFormOpen(false)} outfit={outfitEditing} />
+    </div>
+  )
+}
