@@ -23,3 +23,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     </QueryClientProvider>
   </React.StrictMode>
 )
+
+// Registrar el service worker para que la app sea instalable como PWA
+// (solo en producción, así no interfiere con el dev server)
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((err) => {
+      // eslint-disable-next-line no-console
+      console.warn('Service worker registration failed:', err)
+    })
+  })
+}
