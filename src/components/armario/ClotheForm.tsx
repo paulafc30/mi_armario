@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import ImagePicker, { PickerValue } from '@/components/shared/ImagePicker'
+import ColorPicker from '@/components/shared/ColorPicker'
 import { useCategories } from '@/hooks/useCategories'
 import { useCreateClothe, useDeleteClothe, useUpdateClothe } from '@/hooks/useClothes'
 import { uploadImage, deleteImage } from '@/lib/images'
@@ -27,6 +28,9 @@ export default function ClotheForm({
 
   const [name, setName] = useState('')
   const [categoryId, setCategoryId] = useState<string>('')
+  const [brand, setBrand] = useState('')
+  const [size, setSize] = useState('')
+  const [color, setColor] = useState<string | null>(null)
   const [tags, setTags] = useState('')
   const [notes, setNotes] = useState('')
   const [price, setPrice] = useState<string>('')
@@ -39,6 +43,9 @@ export default function ClotheForm({
     if (clothe) {
       setName(clothe.name)
       setCategoryId(clothe.category_id ?? '')
+      setBrand(clothe.brand ?? '')
+      setSize(clothe.size ?? '')
+      setColor(clothe.color ?? null)
       setTags(clothe.tags.join(', '))
       setNotes(clothe.notes ?? '')
       setPrice(clothe.price ? String(clothe.price) : '')
@@ -48,7 +55,8 @@ export default function ClotheForm({
           : { mode: 'url', url: clothe.image_url ?? '' }
       )
     } else {
-      setName(''); setCategoryId(''); setTags(''); setNotes(''); setPrice('')
+      setName(''); setCategoryId(''); setBrand(''); setSize(''); setColor(null)
+      setTags(''); setNotes(''); setPrice('')
       setPicker({ mode: 'file', file: null, preview: null })
     }
     setError(null)
@@ -78,6 +86,9 @@ export default function ClotheForm({
       const payload = {
         name: name.trim(),
         category_id: categoryId || null,
+        brand: brand.trim() || null,
+        size: size.trim() || null,
+        color,
         tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
         notes: notes.trim() || null,
         price: price ? Number(price) : null,
@@ -123,6 +134,22 @@ export default function ClotheForm({
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="label">Marca</label>
+            <input className="input" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Zara" />
+          </div>
+          <div>
+            <label className="label">Talla</label>
+            <input className="input" value={size} onChange={(e) => setSize(e.target.value)} placeholder="M / 38" />
+          </div>
+        </div>
+
+        <div>
+          <label className="label">Color</label>
+          <ColorPicker value={color} onChange={setColor} />
         </div>
 
         <div>

@@ -39,8 +39,11 @@ export default function Armario() {
       const cat = categories.find((cc) => cc.id === c.category_id)
       return (
         c.name.toLowerCase().includes(q) ||
+        (c.brand?.toLowerCase().includes(q) ?? false) ||
+        (c.color?.toLowerCase().includes(q) ?? false) ||
+        (c.size?.toLowerCase().includes(q) ?? false) ||
         c.tags.some((t) => t.toLowerCase().includes(q)) ||
-        cat?.name.toLowerCase().includes(q)
+        (cat?.name.toLowerCase().includes(q) ?? false)
       )
     })
   }, [clothes, query, filterCat, categories])

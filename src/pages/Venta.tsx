@@ -35,7 +35,11 @@ export default function Venta() {
       if (c.status !== tab) return false
       if (!q) return true
       const cat = categories.find((cc) => cc.id === c.category_id)
-      return c.name.toLowerCase().includes(q) || cat?.name.toLowerCase().includes(q) ||
+      return c.name.toLowerCase().includes(q) ||
+        (cat?.name.toLowerCase().includes(q) ?? false) ||
+        (c.brand?.toLowerCase().includes(q) ?? false) ||
+        (c.color?.toLowerCase().includes(q) ?? false) ||
+        (c.size?.toLowerCase().includes(q) ?? false) ||
         c.tags.some((t) => t.toLowerCase().includes(q))
     })
   }, [clothes, tab, query, categories])

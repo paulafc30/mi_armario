@@ -1,7 +1,9 @@
-import { ImageOff, ArrowRight, ArrowLeft, Check, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { ImageOff, ArrowRight, ArrowLeft, Check, Trash2, Sparkles } from 'lucide-react'
 import type { Clothe, ClothesStatus } from '@/types/database'
 import { useChangeClothesStatus, useDeleteClothe, useUpdateClothe } from '@/hooks/useClothes'
 import { cx, formatPrice, formatDate } from '@/lib/utils'
+import DescriptionModal from './DescriptionModal'
 
 const NEXT: Record<ClothesStatus, ClothesStatus | null> = {
   closet: 'baul',
@@ -31,6 +33,7 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
   const change = useChangeClothesStatus()
   const update = useUpdateClothe()
   const del = useDeleteClothe()
+  const [descOpen, setDescOpen] = useState(false)
 
   const next = NEXT[clothe.status]
   const prev = PREV[clothe.status]
@@ -47,8 +50,9 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
         </div>
         <div className="p-2.5">
           <p className="text-sm font-medium truncate">{clothe.name}</p>
-          <div className="flex items-center justify-between mt-0.5">
+          <div className="flex items-center justify-between mt-0.5 gap-1">
             <span className="text-xs text-gray-500">{formatPrice(clothe.price)}</span>
+            {clothe.size && <span className="chip bg-gray-100 text-gray-700 text-[10px]">T. {clothe.size}</span>}
             {clothe.status === 'archivada' && clothe.sold_at && (
               <span className="text-xs text-gray-400">{formatDate(clothe.sold_at)}</span>
             )}
@@ -76,6 +80,13 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
           </button>
         </div>
 
+        {(clothe.status === 'baul' || clothe.status === 'en_venta') && (
+          <button onClick={() => setDescOpen(true)}
+            className="w-full chip bg-brand-100 text-brand-800 justify-center cursor-pointer hover:bg-brand-200 transition">
+            <Sparkles className="w-3.5 h-3.5" /> Descripción
+          </button>
+        )}
+
         <div className="flex gap-1">
           {prev && (
             <button onClick={() => change.mutate({ id: clothe.id, status: prev })}
@@ -96,6 +107,8 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
           </button>
         </div>
       </div>
+
+      <DescriptionModal open={descOpen} onClose={() => setDescOpen(false)} clothe={clothe} />
     </div>
   )
 }
