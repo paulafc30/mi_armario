@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
-import ImagePicker, { PickerValue } from '@/components/shared/ImagePicker'
+import MultiImagePicker, { PickerImage } from '@/components/shared/MultiImagePicker'
 import ColorPicker from '@/components/shared/ColorPicker'
 import { useCategories } from '@/hooks/useCategories'
 import { useCreateClothe, useDeleteClothe, useUpdateClothe } from '@/hooks/useClothes'
 import { uploadImage, deleteImage } from '@/lib/images'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import type { Clothe, ClothesStatus } from '@/types/database'
+import type { Clothe, ClothesStatus, ClotheImage } from '@/types/database'
 import { Trash2 } from 'lucide-react'
 
 export default function ClotheForm({
@@ -34,7 +35,8 @@ export default function ClotheForm({
   const [tags, setTags] = useState('')
   const [notes, setNotes] = useState('')
   const [price, setPrice] = useState<string>('')
-  const [picker, setPicker] = useState<PickerValue>({ mode: 'file', file: null, preview: null })
+  const [images, setImages] = useState<PickerImage[]>([])
+  const [originalImages, setOriginalImages] = useState<ClotheImage[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -49,40 +51,63 @@ export default function ClotheForm({
       setTags(clothe.tags.join(', '))
       setNotes(clothe.notes ?? '')
       setPrice(clothe.price ? String(clothe.price) : '')
-      setPicker(
-        clothe.image_path
-          ? { mode: 'file', file: null, preview: clothe.image_url }
-          : { mode: 'url', url: clothe.image_url ?? '' }
-      )
+      // Cargar imágenes existentes desde clothe_images, ordenadas por position
+      supabase
+        .from('clothe_images')
+        .select('*')
+        .eq('clothe_id', clothe.id)
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true })
+        .then(({ data }) => {
+          const list = (data ?? []) as ClotheImage[]
+          setOriginalImages(list)
+          setImages(list.map((it) => ({ kind: 'existing', id: it.id, url: it.url, path: it.path })))
+        })
     } else {
       setName(''); setCategoryId(''); setBrand(''); setSize(''); setColor(null)
       setTags(''); setNotes(''); setPrice('')
-      setPicker({ mode: 'file', file: null, preview: null })
+      setImages([]); setOriginalImages([])
     }
     setError(null)
   }, [open, clothe])
+
+  async function syncImages(clotheId: string, userId: string) {
+    // 1. Borrar imágenes que estaban antes y ya no están
+    const stillThere = new Set(
+      images.filter((i) => i.kind === 'existing').map((i) => i.kind === 'existing' ? i.id : '')
+    )
+    const toDelete = originalImages.filter((o) => !stillThere.has(o.id))
+    for (const orig of toDelete) {
+      if (orig.path) await deleteImage(orig.path)
+      await supabase.from('clothe_images').delete().eq('id', orig.id)
+    }
+
+    // 2. Recorrer en orden e insertar/actualizar
+    for (let i = 0; i < images.length; i++) {
+      const item = images[i]
+      if (item.kind === 'existing') {
+        const orig = originalImages.find((o) => o.id === item.id)
+        if (orig && orig.position !== i) {
+          await supabase.from('clothe_images').update({ position: i }).eq('id', item.id)
+        }
+      } else if (item.kind === 'new-file') {
+        const up = await uploadImage(item.file, userId)
+        await supabase.from('clothe_images').insert({
+          clothe_id: clotheId, user_id: userId, url: up.url, path: up.path, position: i,
+        })
+      } else if (item.kind === 'new-url') {
+        await supabase.from('clothe_images').insert({
+          clothe_id: clotheId, user_id: userId, url: item.url, path: null, position: i,
+        })
+      }
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!user) return
     setSubmitting(true); setError(null)
     try {
-      let image_url: string | null = clothe?.image_url ?? null
-      let image_path: string | null = clothe?.image_path ?? null
-
-      if (picker.mode === 'file' && picker.file) {
-        if (clothe?.image_path) await deleteImage(clothe.image_path)
-        const up = await uploadImage(picker.file, user.id)
-        image_url = up.url
-        image_path = up.path
-      } else if (picker.mode === 'url') {
-        if (clothe?.image_path && picker.url !== clothe.image_url) {
-          await deleteImage(clothe.image_path)
-          image_path = null
-        }
-        image_url = picker.url || null
-      }
-
       const payload = {
         name: name.trim(),
         category_id: categoryId || null,
@@ -92,15 +117,20 @@ export default function ClotheForm({
         tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
         notes: notes.trim() || null,
         price: price ? Number(price) : null,
-        image_url,
-        image_path,
       }
 
+      let clotheId: string
       if (clothe) {
         await updateMut.mutateAsync({ id: clothe.id, ...payload })
+        clotheId = clothe.id
       } else {
-        await createMut.mutateAsync({ user_id: user.id, status: defaultStatus, ...payload })
+        const created = await createMut.mutateAsync({
+          user_id: user.id, status: defaultStatus, ...payload,
+        })
+        clotheId = created.id
       }
+
+      await syncImages(clotheId, user.id)
       onClose()
     } catch (err: any) {
       setError(err.message ?? 'Error al guardar')
@@ -119,7 +149,7 @@ export default function ClotheForm({
   return (
     <Modal open={open} onClose={onClose} title={clothe ? 'Editar prenda' : 'Nueva prenda'}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <ImagePicker value={picker} onChange={setPicker} initialPreview={clothe?.image_url} />
+        <MultiImagePicker images={images} onChange={setImages} />
 
         <div>
           <label className="label">Nombre</label>

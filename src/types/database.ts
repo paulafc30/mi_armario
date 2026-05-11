@@ -45,6 +45,16 @@ export interface Clothe {
   updated_at: string
 }
 
+export interface ClotheImage {
+  id: string
+  clothe_id: string
+  user_id: string
+  url: string
+  path: string | null
+  position: number
+  created_at: string
+}
+
 export interface Outfit {
   id: string
   user_id: string
@@ -56,6 +66,16 @@ export interface Outfit {
 export interface OutfitItem {
   outfit_id: string
   clothe_id: string
+}
+
+export interface Wear {
+  id: string
+  user_id: string
+  clothe_id: string | null
+  outfit_id: string | null
+  wear_date: string // YYYY-MM-DD
+  notes: string | null
+  created_at: string
 }
 
 export interface WishlistItem {

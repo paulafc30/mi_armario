@@ -1,7 +1,10 @@
+import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
+import ImageCarousel from '@/components/shared/ImageCarousel'
 import { useChangeClothesStatus } from '@/hooks/useClothes'
 import { colorHexByName } from '@/components/shared/ColorPicker'
-import type { Clothe } from '@/types/database'
+import { supabase } from '@/lib/supabase'
+import type { Clothe, ClotheImage } from '@/types/database'
 import { ArrowRight, Pencil, Tag } from 'lucide-react'
 
 export default function ClotheDetail({
@@ -16,6 +19,23 @@ export default function ClotheDetail({
   onEdit: () => void
 }) {
   const changeStatus = useChangeClothesStatus()
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!open || !clothe) return
+    setGalleryUrls(clothe.image_url ? [clothe.image_url] : [])
+    supabase
+      .from('clothe_images')
+      .select('url, position, created_at')
+      .eq('clothe_id', clothe.id)
+      .order('position', { ascending: true })
+      .order('created_at', { ascending: true })
+      .then(({ data }) => {
+        const urls = (data ?? []).map((r: { url: string }) => r.url)
+        if (urls.length > 0) setGalleryUrls(urls)
+      })
+  }, [open, clothe])
+
   if (!clothe) return null
 
   async function moveToVenta() {
@@ -27,11 +47,7 @@ export default function ClotheDetail({
   return (
     <Modal open={open} onClose={onClose} title={clothe.name}>
       <div className="space-y-4">
-        {clothe.image_url && (
-          <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100">
-            <img src={clothe.image_url} alt={clothe.name} className="w-full h-full object-cover" />
-          </div>
-        )}
+        <ImageCarousel images={galleryUrls} />
         {(clothe.brand || clothe.size || clothe.color) && (
           <div className="flex flex-wrap gap-1.5">
             {clothe.brand && <span className="chip bg-gray-100 text-gray-700">{clothe.brand}</span>}

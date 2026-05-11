@@ -1,0 +1,72 @@
+/**
+ * Comprime una imagen en el navegador antes de subirla:
+ * - Redimensiona si el lado más largo supera `maxSize` (por defecto 1600 px).
+ * - Re-encoda como JPEG con calidad `quality` (por defecto 0.82).
+ * - Si la imagen ya pesa poco o el resultado no mejora, devuelve el original.
+ * - Si por cualquier razón la compresión falla, devuelve el original (fallback seguro).
+ */
+export async function compressImage(
+  file: File,
+  opts: { maxSize?: number; quality?: number } = {}
+): Promise<File> {
+  const maxSize = opts.maxSize ?? 1600
+  const quality = opts.quality ?? 0.82
+
+  // No comprimir si ya es pequeña (< 400 KB) salvo formatos pesados
+  if (file.size < 400 * 1024 && /jpeg|jpg|webp/i.test(file.type)) return file
+
+  try {
+    const bitmap = await loadBitmap(file)
+    const { width, height } = fitInside(bitmap.width, bitmap.height, maxSize)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(bitmap, 0, 0, width, height)
+
+    const blob: Blob | null = await new Promise((resolve) => {
+      canvas.toBlob((b) => resolve(b), 'image/jpeg', quality)
+    })
+    if (!blob) return file
+
+    // Si por la razón que sea el comprimido pesa más que el original, no lo usamos
+    if (blob.size >= file.size) return file
+
+    const baseName = file.name.replace(/\.[^.]+$/, '') || 'foto'
+    return new File([blob], `${baseName}.jpg`, { type: 'image/jpeg', lastModified: Date.now() })
+  } catch {
+    return file
+  }
+}
+
+function fitInside(w: number, h: number, max: number) {
+  if (w <= max && h <= max) return { width: w, height: h }
+  if (w > h) return { width: max, height: Math.round((h * max) / w) }
+  return { width: Math.round((w * max) / h), height: max }
+}
+
+async function loadBitmap(file: File): Promise<ImageBitmap | HTMLImageElement> {
+  // createImageBitmap es mucho más rápido si está disponible
+  if ('createImageBitmap' in window) {
+    try {
+      return await createImageBitmap(file)
+    } catch {
+      // continúa al fallback
+    }
+  }
+  // Fallback con HTMLImageElement
+  const dataUrl: string = await new Promise((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(r.result as string)
+    r.onerror = reject
+    r.readAsDataURL(file)
+  })
+  return await new Promise<HTMLImageElement>((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = dataUrl
+  })
+}

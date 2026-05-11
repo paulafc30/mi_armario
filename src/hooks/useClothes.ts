@@ -46,7 +46,16 @@ export function useDeleteClothe() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async (clothe: Clothe) => {
-      await deleteImage(clothe.image_path)
+      // Recoger todas las rutas en el bucket (cover + galería) y borrarlas
+      const { data: imgs } = await supabase
+        .from('clothe_images')
+        .select('path')
+        .eq('clothe_id', clothe.id)
+      const paths = new Set<string>()
+      if (clothe.image_path) paths.add(clothe.image_path)
+      ;(imgs ?? []).forEach((r: { path: string | null }) => r.path && paths.add(r.path))
+      for (const p of paths) await deleteImage(p)
+
       const { error } = await supabase.from('clothes').delete().eq('id', clothe.id)
       if (error) throw error
     },
