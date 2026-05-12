@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Plus, ExternalLink, ImageOff } from 'lucide-react'
+import { Plus, ExternalLink, ImageOff, Heart } from 'lucide-react'
 import { useWishlist } from '@/hooks/useWishlist'
 import { useSearchStore } from '@/store/search'
 import WishlistForm from '@/components/wishlist/WishlistForm'
+import EmptyState from '@/components/shared/EmptyState'
 import { formatPrice } from '@/lib/utils'
 import type { WishlistItem } from '@/types/database'
 
@@ -23,11 +24,11 @@ export default function Wishlist() {
   }, [items, query])
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="px-4 pb-4 space-y-5">
+      <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Lista de Deseos</h1>
-          <p className="text-sm text-gray-500">{items.length} items</p>
+          <h1 className="heading-xl">Deseos</h1>
+          <p className="text-sm text-muted mt-0.5">{items.length} {items.length === 1 ? 'cosa que te gustaría' : 'cosas que te gustarían'}</p>
         </div>
         <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
           <Plus className="w-4 h-4" /> Añadir
@@ -35,9 +36,18 @@ export default function Wishlist() {
       </div>
 
       {isLoading ? (
-        <p className="text-center text-gray-500 py-12">Cargando…</p>
+        <p className="text-center text-muted py-12">Cargando…</p>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-gray-500">No hay nada en tu lista de deseos.</div>
+        <EmptyState
+          icon={Heart}
+          title="Tu lista de deseos está vacía"
+          subtitle="Pega un enlace de Zara, Vinted o donde quieras y guárdalo para más tarde."
+          action={
+            <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
+              <Plus className="w-4 h-4" /> Añadir
+            </button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {filtered.map((it) => (

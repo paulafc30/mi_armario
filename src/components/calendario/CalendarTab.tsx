@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
 import CalendarGrid from './CalendarGrid'
+import CalendarStats from './CalendarStats'
 import DayDetailModal from './DayDetailModal'
 import { useWearsInRange } from '@/hooks/useWears'
-import { formatISODate, getMonthGrid } from '@/lib/calendar'
+import { formatISODate, getMonthGrid, monthLabel } from '@/lib/calendar'
 
 export default function CalendarTab() {
   const today = new Date()
@@ -42,8 +43,19 @@ export default function CalendarTab() {
     setSelected(formatISODate(t))
   }
 
+  // Filtrar wears solo del mes activo (no de la padding) para las stats
+  const monthOnly = useMemo(
+    () => wears.filter((w) => {
+      const m = Number(w.wear_date.split('-')[1])
+      const y = Number(w.wear_date.split('-')[0])
+      return m === month + 1 && y === year
+    }),
+    [wears, month, year]
+  )
+
   return (
     <div className="space-y-4">
+      <CalendarStats wears={monthOnly} label={monthLabel(year, month)} />
       <CalendarGrid
         year={year}
         month={month}

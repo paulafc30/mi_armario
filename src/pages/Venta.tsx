@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Tag } from 'lucide-react'
 import { useClothes } from '@/hooks/useClothes'
 import { useCategories } from '@/hooks/useCategories'
 import { useSearchStore } from '@/store/search'
 import SaleCard from '@/components/venta/SaleCard'
 import ClotheForm from '@/components/armario/ClotheForm'
+import EmptyState from '@/components/shared/EmptyState'
 import type { Clothe, ClothesStatus } from '@/types/database'
 import { cx, STATUS_LABELS } from '@/lib/utils'
 
@@ -45,11 +46,11 @@ export default function Venta() {
   }, [clothes, tab, query, categories])
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="px-4 pb-4 space-y-5">
+      <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Ropa a la Venta</h1>
-          <p className="text-sm text-gray-500">{STATUS_LABELS[tab]} · {counts[tab]} prendas</p>
+          <h1 className="heading-xl">A la Venta</h1>
+          <p className="text-sm text-muted mt-0.5">{STATUS_LABELS[tab]} · {counts[tab]} prendas</p>
         </div>
         <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
           <Plus className="w-4 h-4" /> Añadir
@@ -67,11 +68,13 @@ export default function Venta() {
       </div>
 
       {isLoading ? (
-        <p className="text-center text-gray-500 py-12">Cargando…</p>
+        <p className="text-center text-muted py-12">Cargando…</p>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16">
-          <p className="text-gray-500">Nada en {STATUS_LABELS[tab]}.</p>
-        </div>
+        <EmptyState
+          icon={Tag}
+          title={`Sin prendas en ${STATUS_LABELS[tab]}`}
+          subtitle="Mueve prendas desde tu armario o añade una nueva directamente aquí."
+        />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {filtered.map((c) => (

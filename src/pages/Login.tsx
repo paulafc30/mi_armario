@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Shirt } from 'lucide-react'
+import { Shirt, ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function Login() {
@@ -16,63 +16,65 @@ export default function Login() {
     setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    if (error) {
-      setError(error.message)
-      return
-    }
+    if (error) return setError(error.message)
     navigate('/armario', { replace: true })
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-gradient-to-b from-brand-50 to-white">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-brand-700 text-white flex items-center justify-center shadow-lg shadow-brand-200">
-            <Shirt className="w-7 h-7" />
-          </div>
-          <h1 className="text-2xl font-bold mt-4">Mi Armario</h1>
-          <p className="text-sm text-gray-500 mt-1">Tu ropa, organizada.</p>
+    <AuthLayout title="Bienvenida de vuelta" subtitle="Entra para gestionar tu armario.">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="label" htmlFor="email">Email</label>
+          <input id="email" type="email" required autoComplete="email"
+            value={email} onChange={(e) => setEmail(e.target.value)}
+            className="input" placeholder="tu@email.com" />
+        </div>
+        <div>
+          <label className="label" htmlFor="password">Contraseña</label>
+          <input id="password" type="password" required autoComplete="current-password"
+            value={password} onChange={(e) => setPassword(e.target.value)}
+            className="input" placeholder="••••••••" />
         </div>
 
-        <form onSubmit={handleSubmit} className="card p-6 space-y-4">
-          <div>
-            <label className="label" htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              required
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="input"
-              placeholder="tu@email.com"
-            />
-          </div>
-          <div>
-            <label className="label" htmlFor="password">Contraseña</label>
-            <input
-              id="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input"
-              placeholder="••••••••"
-            />
-          </div>
+        {error && <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</p>}
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+        <button type="submit" disabled={loading} className="btn-primary w-full">
+          {loading ? 'Entrando…' : <>Entrar <ArrowRight className="w-4 h-4" /></>}
+        </button>
 
-          <button type="submit" disabled={loading} className="btn-primary w-full">
-            {loading ? 'Entrando…' : 'Entrar'}
-          </button>
+        <div className="flex items-center justify-between text-sm pt-1">
+          <Link to="/recuperar" className="text-muted hover:text-brand-700 transition">¿Olvidaste tu contraseña?</Link>
+          <Link to="/registro" className="text-brand-700 font-semibold hover:underline">Crear cuenta</Link>
+        </div>
+      </form>
+    </AuthLayout>
+  )
+}
 
-          <div className="flex items-center justify-between text-sm pt-2">
-            <Link to="/recuperar" className="text-brand-700 hover:underline">¿Olvidaste tu contraseña?</Link>
-            <Link to="/registro" className="text-brand-700 hover:underline font-medium">Crear cuenta</Link>
+export function AuthLayout({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-10 relative overflow-hidden">
+      <div className="absolute inset-x-0 top-0 h-[420px] bg-hero-glow pointer-events-none" />
+      <div className="w-full max-w-sm relative animate-scale-in">
+        <div className="flex flex-col items-center mb-7">
+          <div className="w-16 h-16 rounded-2xl bg-brand-gradient text-white flex items-center justify-center shadow-lift">
+            <Shirt className="w-8 h-8" />
           </div>
-        </form>
+          <h1 className="heading-xl mt-5 text-center">{title}</h1>
+          {subtitle && <p className="text-sm text-muted mt-2 text-center max-w-xs">{subtitle}</p>}
+        </div>
+
+        <div className="card-glass p-6 rounded-3xl">
+          {children}
+        </div>
       </div>
     </div>
   )

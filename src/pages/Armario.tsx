@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Plus, Settings2, Folder, Calendar as CalendarIcon } from 'lucide-react'
+import { Plus, Settings2, Folder, Calendar as CalendarIcon, Shirt } from 'lucide-react'
+import EmptyState from '@/components/shared/EmptyState'
 import { useClothes } from '@/hooks/useClothes'
 import { useCategories } from '@/hooks/useCategories'
 import { useOutfits, OutfitWithItems } from '@/hooks/useOutfits'
@@ -52,11 +53,11 @@ export default function Armario() {
   const catMap = useMemo(() => Object.fromEntries(categories.map((c) => [c.id, c])), [categories])
 
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="px-4 pb-4 space-y-5">
+      <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Mi Armario</h1>
-          <p className="text-sm text-gray-500">{clothes.length} prendas · {outfits.length} outfits</p>
+          <h1 className="heading-xl">Mi Armario</h1>
+          <p className="text-sm text-muted mt-0.5">{clothes.length} prendas · {outfits.length} outfits</p>
         </div>
         <div className="flex gap-2">
           {tab !== 'calendario' && (
@@ -105,11 +106,18 @@ export default function Armario() {
           </div>
 
           {isLoading ? (
-            <p className="text-center text-gray-500 py-12">Cargando…</p>
+            <p className="text-center text-muted py-12">Cargando…</p>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-gray-500">No hay prendas. ¡Añade la primera!</p>
-            </div>
+            <EmptyState
+              icon={Shirt}
+              title="Tu armario está vacío"
+              subtitle="Añade la primera prenda para empezar a organizar tu ropa."
+              action={
+                <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
+                  <Plus className="w-4 h-4" /> Añadir prenda
+                </button>
+              }
+            />
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {filtered.map((c) => (
@@ -125,10 +133,16 @@ export default function Armario() {
 
       {tab === 'outfits' && (
         outfits.length === 0 ? (
-          <div className="text-center py-16">
-            <Folder className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-            <p className="text-gray-500">Aún no has creado outfits.</p>
-          </div>
+          <EmptyState
+            icon={Folder}
+            title="No tienes outfits aún"
+            subtitle="Combina prendas de tu armario en looks para tenerlos a mano."
+            action={
+              <button onClick={() => { setOutfitEditing(null); setOutfitFormOpen(true) }} className="btn-primary">
+                <Plus className="w-4 h-4" /> Crear outfit
+              </button>
+            }
+          />
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {outfits.map((o) => {

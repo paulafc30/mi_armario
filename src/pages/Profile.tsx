@@ -50,8 +50,8 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-md mx-auto p-4 space-y-6">
-      <h1 className="text-2xl font-bold">Mi perfil</h1>
+    <div className="max-w-md mx-auto px-4 pb-4 space-y-5">
+      <h1 className="heading-xl">Mi perfil</h1>
 
       {info && <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-sm">{info}</div>}
       {error && <div className="p-3 rounded-xl bg-red-50 text-red-700 text-sm">{error}</div>}

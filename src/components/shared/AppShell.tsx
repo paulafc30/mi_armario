@@ -5,46 +5,52 @@ import { cx } from '@/lib/utils'
 
 const NAV = [
   { to: '/armario', label: 'Armario', icon: Shirt },
-  { to: '/venta', label: 'A la Venta', icon: Tag },
+  { to: '/venta',   label: 'Venta',   icon: Tag },
   { to: '/wishlist', label: 'Deseos', icon: Heart },
-  { to: '/perfil', label: 'Perfil', icon: User },
+  { to: '/perfil',  label: 'Perfil',  icon: User },
 ]
 
 export default function AppShell() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-gray-100">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-brand-700 text-white flex items-center justify-center">
-            <Shirt className="w-5 h-5" />
-          </div>
-          <div className="flex-1">
-            <GlobalSearch />
+    <div className="min-h-screen flex flex-col">
+      {/* Glass header */}
+      <header className="sticky top-0 z-20 safe-top">
+        <div className="card-glass mx-2 mt-2 mb-3 rounded-2xl">
+          <div className="max-w-3xl mx-auto px-3 py-2.5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-gradient text-white shadow-lift shrink-0">
+              <Shirt className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <GlobalSearch />
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-3xl w-full mx-auto pb-24">
-        <Outlet />
+      <main className="flex-1 max-w-3xl w-full mx-auto pb-32">
+        <div className="animate-fade-in">
+          <Outlet />
+        </div>
       </main>
 
-      <nav className="fixed bottom-0 inset-x-0 bg-white border-t border-gray-200 safe-area-pad">
-        <div className="max-w-3xl mx-auto grid grid-cols-4">
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                cx(
-                  'flex flex-col items-center justify-center py-2.5 text-xs',
-                  isActive ? 'text-brand-700' : 'text-gray-500 hover:text-gray-800'
-                )
-              }
-            >
-              <Icon className="w-5 h-5 mb-0.5" />
-              {label}
-            </NavLink>
-          ))}
+      {/* Floating bottom nav */}
+      <nav className="fixed bottom-3 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 safe-bottom">
+        <div className="card-glass rounded-3xl px-2 py-1.5 mx-auto sm:w-auto">
+          <div className="grid grid-cols-4 sm:flex sm:gap-1">
+            {NAV.map(({ to, label, icon: Icon }) => (
+              <NavLink key={to} to={to}
+                className={({ isActive }) => cx(
+                  'nav-pill min-w-[64px]',
+                  isActive
+                    ? 'bg-brand-gradient text-white shadow-lift'
+                    : 'text-muted hover:text-ink hover:bg-gray-100'
+                )}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="text-2xs font-semibold mt-0.5">{label}</span>
+              </NavLink>
+            ))}
+          </div>
         </div>
       </nav>
     </div>
