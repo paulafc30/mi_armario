@@ -1,9 +1,21 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
+        // Semantic colors driven by CSS vars (auto-flip light/dark)
+        surface:        'rgb(var(--c-surface) / <alpha-value>)',
+        'surface-soft': 'rgb(var(--c-surface-soft) / <alpha-value>)',
+        'surface-glass':'rgb(var(--c-surface) / 0.75)',
+        ink:            'rgb(var(--c-ink) / <alpha-value>)',
+        muted:          'rgb(var(--c-muted) / <alpha-value>)',
+        line:           'rgb(var(--c-line) / <alpha-value>)',
+        'line-soft':    'rgb(var(--c-line-soft) / <alpha-value>)',
+        'brand-soft':   'rgb(var(--c-brand-soft) / <alpha-value>)',
+
+        // Brand palette (constante en ambos temas)
         brand: {
           50:  '#faf5ff',
           100: '#f3e8ff',
@@ -17,9 +29,6 @@ export default {
           900: '#581c87',
           950: '#3b0764',
         },
-        ink: '#0f172a',
-        muted: '#64748b',
-        surface: '#ffffff',
         base: '#faf7ff',
       },
       fontFamily: {
@@ -35,12 +44,12 @@ export default {
       },
       backgroundImage: {
         'brand-gradient': 'linear-gradient(135deg, #9333ea 0%, #7c3aed 100%)',
-        'brand-soft':    'linear-gradient(180deg, #faf5ff 0%, #ffffff 100%)',
-        'hero-glow':     'radial-gradient(60% 50% at 50% 0%, rgba(168,85,247,0.25) 0%, rgba(168,85,247,0) 100%)',
+        'brand-soft':     'linear-gradient(180deg, #faf5ff 0%, #ffffff 100%)',
+        'hero-glow':      'radial-gradient(60% 50% at 50% 0%, rgba(168,85,247,0.25) 0%, rgba(168,85,247,0) 100%)',
       },
       animation: {
-        'fade-in':   'fadeIn 240ms ease-out',
-        'scale-in':  'scaleIn 200ms ease-out',
+        'fade-in':  'fadeIn 240ms ease-out',
+        'scale-in': 'scaleIn 200ms ease-out',
       },
       keyframes: {
         fadeIn:  { from: { opacity: 0 }, to: { opacity: 1 } },

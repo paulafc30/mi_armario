@@ -105,7 +105,7 @@ export default function MultiImagePicker({
       >
         {images.map((img, i) => (
           <div key={img.kind === 'existing' ? img.id : img.tempId}
-               className="relative aspect-square rounded-xl overflow-hidden bg-gray-100 group">
+               className="relative aspect-square rounded-xl overflow-hidden bg-surface-soft group">
             <img src={previewOf(img)} alt="" className="w-full h-full object-cover" />
 
             {/* Botón eliminar */}
@@ -141,7 +141,7 @@ export default function MultiImagePicker({
               ? 'border-brand-600 bg-brand-50 text-brand-700 cursor-wait'
               : dragging
                 ? 'border-brand-600 bg-brand-50 text-brand-700'
-                : 'border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 hover:border-gray-400'
+                : 'border-gray-300 bg-gray-50 text-muted hover:bg-surface-soft hover:border-gray-400'
           )}
         >
           {processing ? (
@@ -197,7 +197,7 @@ export default function MultiImagePicker({
       {error && <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">{error}</p>}
 
       {images.length > 0 && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-muted text-center">
           La primera imagen es la portada. Toca la estrella para cambiarla.
         </p>
       )}

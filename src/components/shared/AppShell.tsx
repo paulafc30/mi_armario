@@ -43,7 +43,7 @@ export default function AppShell() {
                   'nav-pill min-w-[64px]',
                   isActive
                     ? 'bg-brand-gradient text-white shadow-lift'
-                    : 'text-muted hover:text-ink hover:bg-gray-100'
+                    : 'text-muted hover:text-ink hover:bg-surface-soft'
                 )}
               >
                 <Icon className="w-5 h-5" />

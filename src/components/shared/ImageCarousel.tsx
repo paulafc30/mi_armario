@@ -9,8 +9,8 @@ export default function ImageCarousel({ images }: { images: string[] }) {
 
   if (images.length === 0) {
     return (
-      <div className="aspect-square rounded-2xl bg-gray-100 flex items-center justify-center">
-        <ImageOff className="w-10 h-10 text-gray-300" />
+      <div className="aspect-square rounded-2xl bg-surface-soft flex items-center justify-center">
+        <ImageOff className="w-10 h-10 text-muted/50" />
       </div>
     )
   }
@@ -20,7 +20,7 @@ export default function ImageCarousel({ images }: { images: string[] }) {
 
   return (
     <div className="space-y-2">
-      <div className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100">
+      <div className="relative aspect-square rounded-2xl overflow-hidden bg-surface-soft">
         <img src={images[index]} alt="" className="w-full h-full object-cover" />
         {images.length > 1 && (
           <>

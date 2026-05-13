@@ -41,20 +41,20 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
   return (
     <div className="card overflow-hidden">
       <button onClick={onEdit} className="block w-full text-left">
-        <div className="aspect-square bg-gray-100">
+        <div className="aspect-square bg-surface-soft">
           {clothe.image_url ? (
             <img src={clothe.image_url} alt={clothe.name} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center"><ImageOff className="w-8 h-8 text-gray-300" /></div>
+            <div className="w-full h-full flex items-center justify-center"><ImageOff className="w-8 h-8 text-muted/50" /></div>
           )}
         </div>
         <div className="p-2.5">
           <p className="text-sm font-medium truncate">{clothe.name}</p>
           <div className="flex items-center justify-between mt-0.5 gap-1">
-            <span className="text-xs text-gray-500">{formatPrice(clothe.price)}</span>
-            {clothe.size && <span className="chip bg-gray-100 text-gray-700 text-[10px]">T. {clothe.size}</span>}
+            <span className="text-xs text-muted">{formatPrice(clothe.price)}</span>
+            {clothe.size && <span className="chip bg-surface-soft text-ink/80 text-[10px]">T. {clothe.size}</span>}
             {clothe.status === 'archivada' && clothe.sold_at && (
-              <span className="text-xs text-gray-400">{formatDate(clothe.sold_at)}</span>
+              <span className="text-xs text-muted/70">{formatDate(clothe.sold_at)}</span>
             )}
           </div>
         </div>
@@ -65,7 +65,7 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
           <button
             onClick={() => update.mutate({ id: clothe.id, on_wallapop: !clothe.on_wallapop })}
             className={cx('flex-1 chip justify-center cursor-pointer transition',
-              clothe.on_wallapop ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-500')}
+              clothe.on_wallapop ? 'bg-orange-500 text-white' : 'bg-surface-soft text-muted')}
             title="Wallapop"
           >
             W
@@ -73,7 +73,7 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
           <button
             onClick={() => update.mutate({ id: clothe.id, on_vinted: !clothe.on_vinted })}
             className={cx('flex-1 chip justify-center cursor-pointer transition',
-              clothe.on_vinted ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-500')}
+              clothe.on_vinted ? 'bg-emerald-600 text-white' : 'bg-surface-soft text-muted')}
             title="Vinted"
           >
             V

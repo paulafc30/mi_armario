@@ -50,12 +50,12 @@ export default function ClotheDetail({
         <ImageCarousel images={galleryUrls} />
         {(clothe.brand || clothe.size || clothe.color) && (
           <div className="flex flex-wrap gap-1.5">
-            {clothe.brand && <span className="chip bg-gray-100 text-gray-700">{clothe.brand}</span>}
-            {clothe.size && <span className="chip bg-gray-100 text-gray-700">Talla {clothe.size}</span>}
+            {clothe.brand && <span className="chip bg-surface-soft text-ink/80">{clothe.brand}</span>}
+            {clothe.size && <span className="chip bg-surface-soft text-ink/80">Talla {clothe.size}</span>}
             {clothe.color && (
-              <span className="chip bg-gray-100 text-gray-700">
+              <span className="chip bg-surface-soft text-ink/80">
                 <span
-                  className="w-3 h-3 rounded-full border border-gray-300 inline-block"
+                  className="w-3 h-3 rounded-full border border-line inline-block"
                   style={{
                     background:
                       colorHexByName(clothe.color) === 'multicolor'
@@ -71,11 +71,11 @@ export default function ClotheDetail({
         {clothe.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {clothe.tags.map((t) => (
-              <span key={t} className="chip bg-gray-100 text-gray-700"><Tag className="w-3 h-3" />{t}</span>
+              <span key={t} className="chip bg-surface-soft text-ink/80"><Tag className="w-3 h-3" />{t}</span>
             ))}
           </div>
         )}
-        {clothe.notes && <p className="text-sm text-gray-600 whitespace-pre-line">{clothe.notes}</p>}
+        {clothe.notes && <p className="text-sm text-muted whitespace-pre-line">{clothe.notes}</p>}
 
         <div className="grid grid-cols-2 gap-2 pt-2">
           <button onClick={onEdit} className="btn-secondary"><Pencil className="w-4 h-4" /> Editar</button>

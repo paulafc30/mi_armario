@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react'
-import { LogOut, Save } from 'lucide-react'
+import { LogOut, User, Mail, Lock, Sun, Moon, Monitor, Info, Sparkles } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme, ThemeChoice } from '@/lib/theme'
+import { cx } from '@/lib/utils'
+import SettingsRow, { SettingsSection } from '@/components/profile/SettingsRow'
+import EditFieldModal from '@/components/profile/EditFieldModal'
+import ProfileHeader from '@/components/profile/ProfileHeader'
+
+type Field = 'username' | 'email' | 'password' | null
 
 export default function Profile() {
   const { user } = useAuth()
+  const [theme, setTheme] = useTheme()
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [info, setInfo] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [editing, setEditing] = useState<Field>(null)
+  const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -19,70 +25,127 @@ export default function Profile() {
       .then(({ data }) => setUsername(data?.username ?? ''))
   }, [user])
 
-  async function handleSaveProfile(e: React.FormEvent) {
-    e.preventDefault()
-    if (!user) return
-    setSaving(true); setError(null); setInfo(null)
-    const { error } = await supabase.from('profiles').update({ username }).eq('id', user.id)
-    setSaving(false)
-    if (error) { setError(error.message); return }
-    setInfo('Perfil guardado.')
+  function showToast(kind: 'ok' | 'err', text: string) {
+    setToast({ kind, text })
+    setTimeout(() => setToast(null), 2500)
   }
 
-  async function handleChangeEmail() {
-    setError(null); setInfo(null)
-    const { error } = await supabase.auth.updateUser({ email })
-    if (error) { setError(error.message); return }
-    setInfo('Te enviamos un correo para confirmar el cambio de email.')
+  async function saveUsername(value: string) {
+    if (!user) return { error: 'Sin sesión' }
+    const { error } = await supabase.from('profiles').update({ username: value }).eq('id', user.id)
+    if (error) return { error: error.message }
+    setUsername(value)
+    showToast('ok', 'Nombre actualizado')
   }
 
-  async function handleChangePassword() {
-    setError(null); setInfo(null)
-    if (newPassword.length < 6) { setError('Mínimo 6 caracteres.'); return }
-    const { error } = await supabase.auth.updateUser({ password: newPassword })
-    if (error) { setError(error.message); return }
-    setNewPassword('')
-    setInfo('Contraseña actualizada.')
+  async function saveEmail(value: string) {
+    const { error } = await supabase.auth.updateUser({ email: value })
+    if (error) return { error: error.message }
+    return { info: 'Te enviamos un correo para confirmar el cambio.' }
+  }
+
+  async function savePassword(value: string) {
+    const { error } = await supabase.auth.updateUser({ password: value })
+    if (error) return { error: error.message }
+    showToast('ok', 'Contraseña actualizada')
   }
 
   async function handleSignOut() {
+    if (!confirm('¿Cerrar sesión?')) return
     await supabase.auth.signOut()
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 pb-4 space-y-5">
-      <h1 className="heading-xl">Mi perfil</h1>
+    <div className="max-w-md mx-auto px-4 pb-6 space-y-6">
+      <ProfileHeader username={username} email={email} />
 
-      {info && <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-sm">{info}</div>}
-      {error && <div className="p-3 rounded-xl bg-red-50 text-red-700 text-sm">{error}</div>}
+      {toast && (
+        <div className={cx(
+          'p-3 rounded-xl text-sm text-center',
+          toast.kind === 'ok'
+            ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300'
+            : 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300'
+        )}>{toast.text}</div>
+      )}
 
-      <form onSubmit={handleSaveProfile} className="card p-5 space-y-4">
-        <h2 className="font-semibold">Datos</h2>
-        <div>
-          <label className="label">Nombre de usuario</label>
-          <input className="input" value={username} onChange={(e) => setUsername(e.target.value)} />
+      <SettingsSection title="Cuenta">
+        <SettingsRow icon={User}  label="Nombre"     value={username || 'Sin nombre'} onClick={() => setEditing('username')} />
+        <SettingsRow icon={Mail}  label="Email"      value={email}                    onClick={() => setEditing('email')} />
+        <SettingsRow icon={Lock}  label="Contraseña" value="••••••••"                  onClick={() => setEditing('password')} />
+      </SettingsSection>
+
+      <SettingsSection title="Apariencia" description={
+        theme === 'system' ? 'Sigue el tema del sistema operativo.' :
+        theme === 'dark'   ? 'Tema oscuro activado.' : 'Tema claro activado.'
+      }>
+        <div className="p-3">
+          <ThemeSegmented value={theme} onChange={setTheme} />
         </div>
-        <button className="btn-primary w-full" disabled={saving}>
-          <Save className="w-4 h-4" /> Guardar
-        </button>
-      </form>
+      </SettingsSection>
 
-      <div className="card p-5 space-y-4">
-        <h2 className="font-semibold">Email</h2>
-        <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <button onClick={handleChangeEmail} className="btn-secondary w-full">Cambiar email</button>
+      <SettingsSection title="Acerca de">
+        <SettingsRow icon={Sparkles} label="Versión" value="0.1.0" chevron={false} />
+        <SettingsRow icon={Info}     label="Política de privacidad" chevron={false} />
+      </SettingsSection>
+
+      <div className="card overflow-hidden">
+        <SettingsRow icon={LogOut} label="Cerrar sesión" destructive onClick={handleSignOut} chevron={false} />
       </div>
 
-      <div className="card p-5 space-y-4">
-        <h2 className="font-semibold">Contraseña</h2>
-        <input className="input" type="password" placeholder="Nueva contraseña"
-          value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-        <button onClick={handleChangePassword} className="btn-secondary w-full">Cambiar contraseña</button>
-      </div>
+      <EditFieldModal
+        open={editing === 'username'}
+        onClose={() => setEditing(null)}
+        title="Cambiar nombre"
+        label="Nombre de usuario"
+        initialValue={username}
+        placeholder="Tu nombre"
+        onSave={saveUsername}
+      />
+      <EditFieldModal
+        open={editing === 'email'}
+        onClose={() => setEditing(null)}
+        title="Cambiar email"
+        label="Nuevo email"
+        type="email"
+        initialValue={email}
+        hint="Te enviaremos un correo de confirmación al nuevo email."
+        onSave={saveEmail}
+      />
+      <EditFieldModal
+        open={editing === 'password'}
+        onClose={() => setEditing(null)}
+        title="Cambiar contraseña"
+        label="Nueva contraseña"
+        type="password"
+        placeholder="Mínimo 6 caracteres"
+        minLength={6}
+        onSave={savePassword}
+      />
+    </div>
+  )
+}
 
-      <button onClick={handleSignOut} className="btn-danger w-full">
-        <LogOut className="w-4 h-4" /> Cerrar sesión
-      </button>
+function ThemeSegmented({ value, onChange }: { value: ThemeChoice; onChange: (v: ThemeChoice) => void }) {
+  const options: { value: ThemeChoice; label: string; icon: typeof Sun }[] = [
+    { value: 'light',  label: 'Claro',   icon: Sun },
+    { value: 'dark',   label: 'Oscuro',  icon: Moon },
+    { value: 'system', label: 'Sistema', icon: Monitor },
+  ]
+  return (
+    <div className="grid grid-cols-3 gap-1 bg-surface-soft rounded-xl p-1">
+      {options.map((o) => {
+        const Icon = o.icon
+        const active = value === o.value
+        return (
+          <button key={o.value} onClick={() => onChange(o.value)}
+            className={cx(
+              'flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition',
+              active ? 'bg-surface text-ink shadow-soft' : 'text-muted hover:text-ink'
+            )}>
+            <Icon className="w-4 h-4" /> {o.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

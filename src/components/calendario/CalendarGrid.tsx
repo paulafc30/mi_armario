@@ -26,16 +26,16 @@ export default function CalendarGrid({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
-          <button onClick={onPrev} className="p-2 rounded-lg hover:bg-gray-100"><ChevronLeft className="w-5 h-5" /></button>
+          <button onClick={onPrev} className="p-2 rounded-lg hover:bg-surface-soft"><ChevronLeft className="w-5 h-5" /></button>
           <h2 className="text-lg font-semibold min-w-[10ch] text-center">{monthLabel(year, month)}</h2>
-          <button onClick={onNext} className="p-2 rounded-lg hover:bg-gray-100"><ChevronRight className="w-5 h-5" /></button>
+          <button onClick={onNext} className="p-2 rounded-lg hover:bg-surface-soft"><ChevronRight className="w-5 h-5" /></button>
         </div>
         <button onClick={onToday} className="text-sm text-brand-700 hover:underline">Hoy</button>
       </div>
 
       <div className="grid grid-cols-7 gap-1">
         {WEEKDAY_LABELS.map((w) => (
-          <div key={w} className="text-center text-[11px] font-medium text-gray-500 py-1">{w}</div>
+          <div key={w} className="text-center text-[11px] font-medium text-muted py-1">{w}</div>
         ))}
 
         {days.map((d) => {
@@ -49,7 +49,7 @@ export default function CalendarGrid({
               onClick={() => onSelectDay(d.iso)}
               className={cx(
                 'aspect-square rounded-lg text-left p-1 flex flex-col transition relative',
-                d.inMonth ? 'bg-white border border-gray-200' : 'bg-gray-50 border border-transparent text-gray-400',
+                d.inMonth ? 'bg-surface border border-line' : 'bg-surface-soft/60 border border-transparent text-muted/70',
                 d.isToday && 'ring-2 ring-brand-600',
                 wears.length > 0 && 'hover:shadow-sm'
               )}
@@ -64,7 +64,7 @@ export default function CalendarGrid({
                       className="w-full h-4 sm:h-5 object-cover rounded-sm" />
                   ))}
                   {previews.length > 2 && (
-                    <span className="text-[9px] text-gray-500 font-medium">+{previews.length - 2}</span>
+                    <span className="text-[9px] text-muted font-medium">+{previews.length - 2}</span>
                   )}
                 </div>
               )}

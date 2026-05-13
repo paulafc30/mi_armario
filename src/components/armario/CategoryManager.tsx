@@ -44,7 +44,7 @@ export default function CategoryManager({ open, onClose }: { open: boolean; onCl
           </div>
         </form>
 
-        <ul className="divide-y divide-gray-100">
+        <ul className="divide-y divide-line-soft">
           {categories.map((cat) => {
             const editing = editingId === cat.id
             return (
@@ -64,14 +64,14 @@ export default function CategoryManager({ open, onClose }: { open: boolean; onCl
                       await update.mutateAsync({ id: cat.id, name: editName, color: editColor })
                       setEditingId(null)
                     }} className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg"><Check className="w-4 h-4" /></button>
-                    <button onClick={() => setEditingId(null)} className="p-2 hover:bg-gray-100 rounded-lg"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setEditingId(null)} className="p-2 hover:bg-surface-soft rounded-lg"><X className="w-4 h-4" /></button>
                   </>
                 ) : (
                   <>
                     <span className="w-4 h-4 rounded-full" style={{ background: cat.color }} />
                     <span className="flex-1">{cat.name}</span>
                     <button onClick={() => { setEditingId(cat.id); setEditName(cat.name); setEditColor(cat.color) }}
-                      className="p-2 hover:bg-gray-100 rounded-lg"><Pencil className="w-4 h-4 text-gray-600" /></button>
+                      className="p-2 hover:bg-surface-soft rounded-lg"><Pencil className="w-4 h-4 text-muted" /></button>
                     <button onClick={async () => { if (confirm(`¿Eliminar "${cat.name}"?`)) await del.mutateAsync(cat.id) }}
                       className="p-2 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4 text-red-600" /></button>
                   </>

@@ -80,7 +80,7 @@ export default function WishlistForm({ open, onClose, item }: { open: boolean; o
         </div>
 
         {imageUrl && (
-          <div className="aspect-square rounded-2xl overflow-hidden bg-gray-100 max-h-64">
+          <div className="aspect-square rounded-2xl overflow-hidden bg-surface-soft max-h-64">
             <img src={imageUrl} alt="" className="w-full h-full object-contain" />
           </div>
         )}

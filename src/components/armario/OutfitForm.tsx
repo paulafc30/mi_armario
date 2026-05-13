@@ -72,7 +72,7 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
                 >
                   {c.image_url ? (
                     <img src={c.image_url} alt={c.name} className="w-full h-full object-cover" />
-                  ) : <div className="w-full h-full bg-gray-100" />}
+                  ) : <div className="w-full h-full bg-surface-soft" />}
                   {isSelected && (
                     <div className="absolute inset-0 bg-brand-700/30 flex items-center justify-center">
                       <Check className="w-6 h-6 text-white drop-shadow" />
@@ -82,7 +82,7 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
               )
             })}
           </div>
-          {closet.length === 0 && <p className="text-sm text-gray-500">No hay prendas en tu armario aún.</p>}
+          {closet.length === 0 && <p className="text-sm text-muted">No hay prendas en tu armario aún.</p>}
         </div>
 
         <div className="flex gap-2 pt-2">

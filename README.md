@@ -27,17 +27,17 @@ npm install
    VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
    ```
 
-### 3. Ejecutar la migración SQL
+### 3. Ejecutar las migraciones SQL
 
-1. Abre el panel de Supabase → **SQL Editor → New query**.
-2. Pega el contenido de [`supabase/migrations/0001_initial_schema.sql`](supabase/migrations/0001_initial_schema.sql).
-3. Ejecuta (botón **Run**).
+En el panel de Supabase → **SQL Editor → New query**, pega y ejecuta una a una, **en orden**, las migraciones de `supabase/migrations/`:
 
-Esto crea:
-- Tablas: `profiles`, `categories`, `clothes`, `outfits`, `outfit_items`, `wishlist`.
-- Políticas **Row Level Security** para que cada usuaria solo vea sus datos.
-- Bucket de Storage `clothes-images` con políticas de acceso por carpeta de usuario.
-- Categorías por defecto (Camisetas, Pantalones, Vestidos, Zapatos, Accesorios, Abrigos) que se crean automáticamente al registrarte.
+1. `0001_initial_schema.sql` — tablas base (profiles, categories, clothes, outfits, outfit_items, wishlist), RLS, bucket de Storage `clothes-images`, categorías por defecto al registrarte.
+2. `0002_extra_fields.sql` — añade brand, size, color a las prendas.
+3. `0003_clothe_images.sql` — tabla `clothe_images` para varias fotos por prenda + trigger que mantiene la portada sincronizada.
+4. `0004_wears.sql` — tabla `wears` para el calendario "qué llevé hoy".
+5. `0005_grants.sql` — GRANTs explícitos para futuro-proof (Supabase cambia su comportamiento por defecto el 30 de octubre de 2026).
+
+> Para tablas que crees en el futuro, recuerda añadir el bloque de GRANTs (ver `0005_grants.sql` como plantilla) y activar RLS con sus políticas dentro de la misma migración.
 
 ### 4. Configurar email de Supabase (opcional pero recomendado)
 

@@ -78,11 +78,11 @@ export default function Armario() {
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-2 border-b border-line">
         {(['prendas', 'outfits', 'calendario'] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={cx('px-3 py-2 text-sm font-medium border-b-2 -mb-[1px] flex items-center gap-1.5',
-              tab === t ? 'border-brand-700 text-brand-700' : 'border-transparent text-gray-500')}>
+              tab === t ? 'border-brand-700 text-brand-700' : 'border-transparent text-muted')}>
             {t === 'calendario' && <CalendarIcon className="w-3.5 h-3.5" />}
             {t === 'prendas' ? 'Prendas' : t === 'outfits' ? 'Outfits' : 'Calendario'}
           </button>
@@ -93,12 +93,12 @@ export default function Armario() {
         <>
           <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
             <button onClick={() => setFilterCat(null)}
-              className={cx('chip whitespace-nowrap', filterCat === null ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200')}>
+              className={cx('chip whitespace-nowrap', filterCat === null ? 'bg-brand-700 text-white' : 'bg-white border border-line')}>
               Todas
             </button>
             {categories.map((c) => (
               <button key={c.id} onClick={() => setFilterCat(c.id === filterCat ? null : c.id)}
-                className={cx('chip whitespace-nowrap', filterCat === c.id ? 'text-white' : 'bg-white border border-gray-200')}
+                className={cx('chip whitespace-nowrap', filterCat === c.id ? 'text-white' : 'bg-white border border-line')}
                 style={filterCat === c.id ? { background: c.color } : undefined}>
                 {c.name}
               </button>
@@ -150,14 +150,14 @@ export default function Armario() {
                 .map((id) => clothes.find((c) => c.id === id)?.image_url).filter(Boolean) as string[]
               return (
                 <button key={o.id} onClick={() => { setOutfitEditing(o); setOutfitFormOpen(true) }} className="card overflow-hidden text-left">
-                  <div className="aspect-square grid grid-cols-2 gap-px bg-gray-100">
+                  <div className="aspect-square grid grid-cols-2 gap-px bg-surface-soft">
                     {previews.length > 0 ? previews.map((src, i) => (
                       <img key={i} src={src} alt="" className="w-full h-full object-cover" />
-                    )) : <div className="col-span-2 row-span-2 flex items-center justify-center text-gray-300">Sin prendas</div>}
+                    )) : <div className="col-span-2 row-span-2 flex items-center justify-center text-muted/50">Sin prendas</div>}
                   </div>
                   <div className="p-2.5">
                     <p className="text-sm font-medium truncate">{o.name}</p>
-                    <p className="text-xs text-gray-500">{o.clothe_ids.length} prendas</p>
+                    <p className="text-xs text-muted">{o.clothe_ids.length} prendas</p>
                   </div>
                 </button>
               )

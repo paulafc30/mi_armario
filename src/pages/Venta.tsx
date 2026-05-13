@@ -61,7 +61,7 @@ export default function Venta() {
         {TABS.map((t) => (
           <button key={t.status} onClick={() => setTab(t.status)}
             className={cx('px-3 py-2 rounded-xl text-sm whitespace-nowrap transition',
-              tab === t.status ? 'bg-brand-700 text-white' : 'bg-white border border-gray-200 text-gray-700')}>
+              tab === t.status ? 'bg-brand-700 text-white' : 'bg-surface border border-line text-ink/80')}>
             {t.label} <span className="opacity-60">{counts[t.status]}</span>
           </button>
         ))}

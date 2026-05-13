@@ -9,11 +9,11 @@ export const STATUS_LABELS: Record<ClothesStatus, string> = {
 }
 
 export const STATUS_COLORS: Record<ClothesStatus, string> = {
-  closet: 'bg-brand-100 text-brand-800',
-  baul: 'bg-amber-100 text-amber-800',
-  en_venta: 'bg-emerald-100 text-emerald-800',
-  vendida: 'bg-blue-100 text-blue-800',
-  archivada: 'bg-gray-200 text-gray-700',
+  closet:    'bg-brand-100 text-brand-800 dark:bg-brand-500/20 dark:text-brand-200',
+  baul:      'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200',
+  en_venta:  'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-200',
+  vendida:   'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-200',
+  archivada: 'bg-surface-soft text-muted',
 }
 
 export function cx(...classes: (string | false | null | undefined)[]): string {

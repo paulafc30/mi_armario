@@ -68,11 +68,11 @@ export default function CalendarStats({ wears, label }: { wears: WearWithRefs[];
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {stats.topClothe && (
             <div className="card p-3 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-surface-soft overflow-hidden shrink-0">
                 {stats.topClothe.image_url ? (
                   <img src={stats.topClothe.image_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400"><Shirt className="w-5 h-5" /></div>
+                  <div className="w-full h-full flex items-center justify-center text-muted/70"><Shirt className="w-5 h-5" /></div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
@@ -84,11 +84,11 @@ export default function CalendarStats({ wears, label }: { wears: WearWithRefs[];
           )}
           {stats.topOutfit && (
             <div className="card p-3 flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden shrink-0">
+              <div className="w-12 h-12 rounded-xl bg-surface-soft overflow-hidden shrink-0">
                 {stats.topOutfit.cover_image_url ? (
                   <img src={stats.topOutfit.cover_image_url} alt="" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400"><Folder className="w-5 h-5" /></div>
+                  <div className="w-full h-full flex items-center justify-center text-muted/70"><Folder className="w-5 h-5" /></div>
                 )}
               </div>
               <div className="flex-1 min-w-0">

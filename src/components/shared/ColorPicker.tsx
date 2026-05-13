@@ -44,7 +44,7 @@ export default function ColorPicker({
             className={cx(
               'aspect-square rounded-xl transition relative',
               selected ? 'ring-2 ring-offset-2 ring-brand-700' : 'hover:scale-105',
-              c.border ? 'border border-gray-300' : ''
+              c.border ? 'border border-line' : ''
             )}
             style={{
               background: isMulti

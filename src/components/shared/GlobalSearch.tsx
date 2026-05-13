@@ -5,7 +5,7 @@ export default function GlobalSearch() {
   const { query, setQuery } = useSearchStore()
   return (
     <div className="relative w-full">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted/70" />
       <input
         type="search"
         placeholder="Buscar en mi armario…"
@@ -16,10 +16,10 @@ export default function GlobalSearch() {
       {query && (
         <button
           onClick={() => setQuery('')}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-gray-100"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-surface-soft text-muted"
           aria-label="Limpiar"
         >
-          <X className="w-4 h-4 text-gray-500" />
+          <X className="w-4 h-4" />
         </button>
       )}
     </div>

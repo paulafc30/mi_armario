@@ -13,14 +13,14 @@ export default function ClotheCard({
 }) {
   return (
     <button onClick={onClick} className="card overflow-hidden text-left hover:shadow-md transition group">
-      <div className="aspect-square bg-gray-100 relative">
+      <div className="aspect-square bg-surface-soft relative">
         {clothe.image_url ? (
           <img src={clothe.image_url} alt={clothe.name} className="w-full h-full object-cover" loading="lazy" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center"><ImageOff className="w-8 h-8 text-gray-300" /></div>
+          <div className="w-full h-full flex items-center justify-center"><ImageOff className="w-8 h-8 text-muted/50" /></div>
         )}
-        <div className="absolute top-2 right-2 p-1 rounded-full bg-white/90 opacity-0 group-hover:opacity-100 transition">
-          <MoreVertical className="w-4 h-4 text-gray-700" />
+        <div className="absolute top-2 right-2 p-1 rounded-full bg-surface/90 opacity-0 group-hover:opacity-100 transition">
+          <MoreVertical className="w-4 h-4 text-ink/80" />
         </div>
       </div>
       <div className="p-2.5">

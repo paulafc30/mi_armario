@@ -53,15 +53,15 @@ export default function DescriptionModal({
   return (
     <Modal open={open} onClose={onClose} title="Descripción del anuncio">
       <div className="space-y-4">
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+        <div className="flex gap-1 bg-surface-soft rounded-xl p-1">
           <button onClick={() => setVariant('wallapop')}
             className={cx('flex-1 py-1.5 rounded-lg text-sm font-medium transition',
-              variant === 'wallapop' ? 'bg-white shadow text-gray-900' : 'text-gray-600')}>
+              variant === 'wallapop' ? 'bg-surface shadow text-ink' : 'text-muted')}>
             Wallapop
           </button>
           <button onClick={() => setVariant('vinted')}
             className={cx('flex-1 py-1.5 rounded-lg text-sm font-medium transition',
-              variant === 'vinted' ? 'bg-white shadow text-gray-900' : 'text-gray-600')}>
+              variant === 'vinted' ? 'bg-surface shadow text-ink' : 'text-muted')}>
             Vinted
           </button>
         </div>
@@ -81,7 +81,7 @@ export default function DescriptionModal({
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-muted text-center">
           Edita lo que quieras antes de copiar. Se genera a partir del nombre, marca, talla, color y notas.
         </p>
       </div>

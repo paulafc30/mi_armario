@@ -53,20 +53,20 @@ export default function Wishlist() {
           {filtered.map((it) => (
             <div key={it.id} className="card overflow-hidden">
               <button onClick={() => { setEditing(it); setFormOpen(true) }} className="block w-full text-left">
-                <div className="aspect-square bg-gray-100">
+                <div className="aspect-square bg-surface-soft">
                   {it.image_url ? (
                     <img src={it.image_url} alt={it.name ?? ''} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center"><ImageOff className="w-8 h-8 text-gray-300" /></div>
+                    <div className="w-full h-full flex items-center justify-center"><ImageOff className="w-8 h-8 text-muted/50" /></div>
                   )}
                 </div>
                 <div className="p-2.5">
                   <p className="text-sm font-medium truncate">{it.name ?? 'Sin nombre'}</p>
-                  <p className="text-xs text-gray-500">{formatPrice(it.price)}</p>
+                  <p className="text-xs text-muted">{formatPrice(it.price)}</p>
                 </div>
               </button>
               <a href={it.url} target="_blank" rel="noreferrer"
-                className="flex items-center justify-center gap-1 text-xs text-brand-700 hover:bg-brand-50 py-2 border-t border-gray-100">
+                className="flex items-center justify-center gap-1 text-xs text-brand-700 hover:bg-brand-50 py-2 border-t border-line-soft">
                 <ExternalLink className="w-3.5 h-3.5" /> Ver
               </a>
             </div>

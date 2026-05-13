@@ -66,7 +66,7 @@ export default function DayDetailModal({
     <Modal open={open} onClose={close} title={longDateLabel(iso)}>
       <div className="space-y-4">
         {wears.length === 0 ? (
-          <p className="text-sm text-gray-500 text-center py-4">No has registrado nada en este día.</p>
+          <p className="text-sm text-muted text-center py-4">No has registrado nada en este día.</p>
         ) : (
           <ul className="space-y-2">
             {wears.map((w) => {
@@ -74,12 +74,12 @@ export default function DayDetailModal({
               const name = w.clothes?.name ?? w.outfits?.name ?? 'Sin nombre'
               const img = w.clothes?.image_url ?? w.outfits?.cover_image_url
               return (
-                <li key={w.id} className="flex items-center gap-3 p-2 rounded-xl bg-gray-50">
-                  <div className="w-12 h-12 rounded-lg bg-gray-200 overflow-hidden flex-shrink-0">
+                <li key={w.id} className="flex items-center gap-3 p-2 rounded-xl bg-surface-soft">
+                  <div className="w-12 h-12 rounded-lg bg-surface-soft overflow-hidden flex-shrink-0">
                     {img ? (
                       <img src={img} alt="" className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400">
+                      <div className="w-full h-full flex items-center justify-center text-muted/70">
                         {isOutfit ? <Folder className="w-5 h-5" /> : <ImageOff className="w-5 h-5" />}
                       </div>
                     )}
@@ -112,7 +112,7 @@ export default function DayDetailModal({
         )}
 
         {addMode !== null && (
-          <div className="border-t border-gray-200 pt-4 space-y-3">
+          <div className="border-t border-line pt-4 space-y-3">
             <div className="flex items-center gap-2">
               <input className="input flex-1" placeholder={`Buscar ${addMode === 'clothe' ? 'prenda' : 'outfit'}…`}
                 value={search} onChange={(e) => setSearch(e.target.value)} autoFocus />
@@ -124,11 +124,11 @@ export default function DayDetailModal({
             <div className="grid grid-cols-3 gap-2 max-h-72 overflow-y-auto">
               {addMode === 'clothe' && filteredClothes.map((c) => (
                 <button key={c.id} onClick={() => addClothe(c.id)}
-                  className="aspect-square rounded-xl overflow-hidden bg-gray-100 relative hover:ring-2 hover:ring-brand-500 transition">
+                  className="aspect-square rounded-xl overflow-hidden bg-surface-soft relative hover:ring-2 hover:ring-brand-500 transition">
                   {c.image_url ? (
                     <img src={c.image_url} alt={c.name} className="w-full h-full object-cover" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <div className="w-full h-full flex items-center justify-center text-muted/70">
                       <ImageOff className="w-5 h-5" />
                     </div>
                   )}
@@ -139,8 +139,8 @@ export default function DayDetailModal({
               ))}
               {addMode === 'outfit' && filteredOutfits.map((o) => (
                 <button key={o.id} onClick={() => addOutfit(o.id)}
-                  className="aspect-square rounded-xl overflow-hidden bg-gray-100 relative hover:ring-2 hover:ring-brand-500 transition flex flex-col items-center justify-center">
-                  <Folder className="w-6 h-6 text-gray-400" />
+                  className="aspect-square rounded-xl overflow-hidden bg-surface-soft relative hover:ring-2 hover:ring-brand-500 transition flex flex-col items-center justify-center">
+                  <Folder className="w-6 h-6 text-muted/70" />
                   <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent text-white text-[10px] font-medium px-1.5 py-1 truncate">
                     {o.name}
                   </div>
@@ -149,10 +149,10 @@ export default function DayDetailModal({
             </div>
 
             {addMode === 'clothe' && filteredClothes.length === 0 && (
-              <p className="text-sm text-gray-500 text-center py-4">No hay prendas que coincidan.</p>
+              <p className="text-sm text-muted text-center py-4">No hay prendas que coincidan.</p>
             )}
             {addMode === 'outfit' && filteredOutfits.length === 0 && (
-              <p className="text-sm text-gray-500 text-center py-4">No hay outfits que coincidan.</p>
+              <p className="text-sm text-muted text-center py-4">No hay outfits que coincidan.</p>
             )}
           </div>
         )}
@@ -162,7 +162,7 @@ export default function DayDetailModal({
         </button>
 
         {addMode === null && wears.length === 0 && (
-          <p className="text-xs text-gray-500 text-center flex items-center justify-center gap-1">
+          <p className="text-xs text-muted text-center flex items-center justify-center gap-1">
             <Plus className="w-3 h-3" /> Toca un botón para empezar a registrar.
           </p>
         )}
