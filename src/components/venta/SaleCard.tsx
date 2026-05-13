@@ -4,6 +4,7 @@ import type { Clothe, ClothesStatus } from '@/types/database'
 import { useChangeClothesStatus, useDeleteClothe, useUpdateClothe } from '@/hooks/useClothes'
 import { cx, formatPrice, formatDate } from '@/lib/utils'
 import DescriptionModal from './DescriptionModal'
+import { WallapopIcon, VintedIcon, WALLAPOP_COLOR, VINTED_COLOR } from './PlatformIcons'
 
 const NEXT: Record<ClothesStatus, ClothesStatus | null> = {
   closet: 'baul',
@@ -61,22 +62,48 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
       </button>
 
       <div className="px-2.5 pb-2.5 space-y-2">
-        <div className="flex gap-1">
+        <div className="flex gap-1.5">
           <button
             onClick={() => update.mutate({ id: clothe.id, on_wallapop: !clothe.on_wallapop })}
-            className={cx('flex-1 chip justify-center cursor-pointer transition',
-              clothe.on_wallapop ? 'bg-orange-500 text-white' : 'bg-surface-soft text-muted')}
-            title="Wallapop"
+            className={cx(
+              'flex-1 rounded-lg py-1.5 flex items-center justify-center transition cursor-pointer',
+              clothe.on_wallapop ? 'ring-1' : 'bg-surface-soft hover:bg-surface ring-1 ring-transparent'
+            )}
+            style={
+              clothe.on_wallapop
+                ? {
+                    backgroundColor: `${WALLAPOP_COLOR}1a`,
+                    boxShadow: `inset 0 0 0 1px ${WALLAPOP_COLOR}66`,
+                  }
+                : undefined
+            }
+            title={clothe.on_wallapop ? 'Quitar de Wallapop' : 'Publicar en Wallapop'}
           >
-            W
+            <WallapopIcon
+              className={cx('w-5 h-5 transition', !clothe.on_wallapop && 'opacity-40 grayscale')}
+              style={{ color: WALLAPOP_COLOR }}
+            />
           </button>
           <button
             onClick={() => update.mutate({ id: clothe.id, on_vinted: !clothe.on_vinted })}
-            className={cx('flex-1 chip justify-center cursor-pointer transition',
-              clothe.on_vinted ? 'bg-emerald-600 text-white' : 'bg-surface-soft text-muted')}
-            title="Vinted"
+            className={cx(
+              'flex-1 rounded-lg py-1.5 flex items-center justify-center transition cursor-pointer',
+              clothe.on_vinted ? 'ring-1' : 'bg-surface-soft hover:bg-surface ring-1 ring-transparent'
+            )}
+            style={
+              clothe.on_vinted
+                ? {
+                    backgroundColor: `${VINTED_COLOR}1a`,
+                    boxShadow: `inset 0 0 0 1px ${VINTED_COLOR}66`,
+                  }
+                : undefined
+            }
+            title={clothe.on_vinted ? 'Quitar de Vinted' : 'Publicar en Vinted'}
           >
-            V
+            <VintedIcon
+              className={cx('w-5 h-5 transition', !clothe.on_vinted && 'opacity-40 grayscale')}
+              style={{ color: VINTED_COLOR }}
+            />
           </button>
         </div>
 

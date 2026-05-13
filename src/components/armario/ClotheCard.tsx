@@ -1,6 +1,5 @@
 import { ImageOff, MoreVertical } from 'lucide-react'
 import type { Clothe, Category } from '@/types/database'
-import { cx } from '@/lib/utils'
 
 export default function ClotheCard({
   clothe,
@@ -26,7 +25,8 @@ export default function ClotheCard({
       <div className="p-2.5">
         <p className="text-sm font-medium truncate">{clothe.name}</p>
         {category && (
-          <span className={cx('chip mt-1')} style={{ background: `${category.color}22`, color: category.color }}>
+          <span className="chip mt-1 bg-surface-soft text-muted gap-1.5 font-medium">
+            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: category.color }} />
             {category.name}
           </span>
         )}
