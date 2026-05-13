@@ -5,8 +5,9 @@
 -- para que el Data API (PostgREST / supabase-js) pueda acceder a una
 -- tabla del esquema "public". Hasta ahora era automático.
 --
--- Esta migración añade los GRANTs estándar a todas las tablas existentes
--- para que la app siga funcionando sin sorpresas tras esa fecha.
+-- Esta migración añade los GRANTs estándar a todas las tablas de la app.
+-- Es idempotente y tolerante: si una tabla no existe (porque aún no se
+-- ha corrido su migración), simplemente la salta sin fallar.
 --
 -- Patrón aplicado por tabla:
 --   anon:          SELECT          (las consultas siguen filtradas por RLS)
@@ -14,45 +15,34 @@
 --   service_role:  ALL
 -- =====================================================================
 
--- profiles ------------------------------------------------------------
-grant select                          on public.profiles      to anon;
-grant select, insert, update, delete  on public.profiles      to authenticated;
-grant all                             on public.profiles      to service_role;
-
--- categories ----------------------------------------------------------
-grant select                          on public.categories    to anon;
-grant select, insert, update, delete  on public.categories    to authenticated;
-grant all                             on public.categories    to service_role;
-
--- clothes -------------------------------------------------------------
-grant select                          on public.clothes       to anon;
-grant select, insert, update, delete  on public.clothes       to authenticated;
-grant all                             on public.clothes       to service_role;
-
--- clothe_images -------------------------------------------------------
-grant select                          on public.clothe_images to anon;
-grant select, insert, update, delete  on public.clothe_images to authenticated;
-grant all                             on public.clothe_images to service_role;
-
--- outfits -------------------------------------------------------------
-grant select                          on public.outfits       to anon;
-grant select, insert, update, delete  on public.outfits       to authenticated;
-grant all                             on public.outfits       to service_role;
-
--- outfit_items --------------------------------------------------------
-grant select                          on public.outfit_items  to anon;
-grant select, insert, update, delete  on public.outfit_items  to authenticated;
-grant all                             on public.outfit_items  to service_role;
-
--- wishlist ------------------------------------------------------------
-grant select                          on public.wishlist      to anon;
-grant select, insert, update, delete  on public.wishlist      to authenticated;
-grant all                             on public.wishlist      to service_role;
-
--- wears ---------------------------------------------------------------
-grant select                          on public.wears         to anon;
-grant select, insert, update, delete  on public.wears         to authenticated;
-grant all                             on public.wears         to service_role;
+do $$
+declare
+  tbl text;
+  tables text[] := array[
+    'profiles',
+    'categories',
+    'clothes',
+    'clothe_images',
+    'outfits',
+    'outfit_items',
+    'wishlist',
+    'wears'
+  ];
+begin
+  foreach tbl in array tables loop
+    if exists (
+      select 1 from information_schema.tables
+      where table_schema = 'public' and table_name = tbl
+    ) then
+      execute format('grant select on public.%I to anon', tbl);
+      execute format('grant select, insert, update, delete on public.%I to authenticated', tbl);
+      execute format('grant all on public.%I to service_role', tbl);
+      raise notice 'GRANTs aplicados a public.%', tbl;
+    else
+      raise notice 'Saltando public.% (la tabla no existe todavía)', tbl;
+    end if;
+  end loop;
+end $$;
 
 -- =====================================================================
 -- Notas
