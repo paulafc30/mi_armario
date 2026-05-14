@@ -81,7 +81,6 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
           >
             <WallapopIcon
               className={cx('w-5 h-5 transition', !clothe.on_wallapop && 'opacity-40 grayscale')}
-              style={{ color: WALLAPOP_COLOR }}
             />
           </button>
           <button
@@ -102,7 +101,6 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
           >
             <VintedIcon
               className={cx('w-5 h-5 transition', !clothe.on_vinted && 'opacity-40 grayscale')}
-              style={{ color: VINTED_COLOR }}
             />
           </button>
         </div>
