@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Plus, ExternalLink, ImageOff, Heart } from 'lucide-react'
 import { useWishlist } from '@/hooks/useWishlist'
 import { useSearchStore } from '@/store/search'
-import WishlistForm from '@/components/wishlist/WishlistForm'
+import WishlistForm, { WishlistPrefill } from '@/components/wishlist/WishlistForm'
 import EmptyState from '@/components/shared/EmptyState'
 import { formatPrice } from '@/lib/utils'
+import { consumeSharedPayload } from '@/lib/sharedItem'
 import type { WishlistItem } from '@/types/database'
 
 export default function Wishlist() {
@@ -12,6 +13,21 @@ export default function Wishlist() {
   const { query } = useSearchStore()
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<WishlistItem | null>(null)
+  const [prefill, setPrefill] = useState<WishlistPrefill | undefined>(undefined)
+
+  // Consumir share apuntado a wishlist y abrir el formulario con auto-preview
+  useEffect(() => {
+    const shared = consumeSharedPayload('wishlist')
+    if (shared) {
+      setPrefill({
+        url: shared.url || undefined,
+        name: shared.title || undefined,
+        autoFetchPreview: !!shared.url,
+      })
+      setEditing(null)
+      setFormOpen(true)
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -74,7 +90,12 @@ export default function Wishlist() {
         </div>
       )}
 
-      <WishlistForm open={formOpen} onClose={() => setFormOpen(false)} item={editing} />
+      <WishlistForm
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setPrefill(undefined) }}
+        item={editing}
+        prefill={editing ? undefined : prefill}
+      />
     </div>
   )
 }

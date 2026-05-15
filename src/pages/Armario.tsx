@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { consumeSharedPayload } from '@/lib/sharedItem'
+import type { ClothePrefill } from '@/components/armario/ClotheForm'
 import { Plus, Settings2, Folder, Calendar as CalendarIcon, Shirt } from 'lucide-react'
 import EmptyState from '@/components/shared/EmptyState'
 import { useClothes } from '@/hooks/useClothes'
@@ -27,6 +29,22 @@ export default function Armario() {
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Clothe | null>(null)
+  const [prefill, setPrefill] = useState<ClothePrefill | undefined>(undefined)
+
+  // Si la usuaria viene desde "Compartir → Armario", abrir el formulario
+  // prerellenado con lo que llegue del share.
+  useEffect(() => {
+    const shared = consumeSharedPayload('armario')
+    if (shared) {
+      setPrefill({
+        name: shared.title || undefined,
+        url: shared.url || undefined,
+        notes: shared.url ? `Compartido desde: ${shared.url}` : undefined,
+      })
+      setEditing(null)
+      setFormOpen(true)
+    }
+  }, [])
   const [detailOpen, setDetailOpen] = useState(false)
   const [selected, setSelected] = useState<Clothe | null>(null)
   const [catModal, setCatModal] = useState(false)
@@ -176,7 +194,12 @@ export default function Armario() {
         )
       )}
 
-      <ClotheForm open={formOpen} onClose={() => setFormOpen(false)} clothe={editing} />
+      <ClotheForm
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setPrefill(undefined) }}
+        clothe={editing}
+        prefill={editing ? undefined : prefill}
+      />
       <ClotheDetail open={detailOpen} onClose={() => setDetailOpen(false)} clothe={selected}
         onEdit={() => { setEditing(selected); setDetailOpen(false); setFormOpen(true) }} />
       <CategoryManager open={catModal} onClose={() => setCatModal(false)} />

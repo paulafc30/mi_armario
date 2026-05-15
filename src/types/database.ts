@@ -41,6 +41,7 @@ export interface Clothe {
   brand: string | null
   size: string | null
   color: string | null
+  material: string | null
   created_at: string
   updated_at: string
 }

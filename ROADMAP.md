@@ -128,24 +128,26 @@ supabase/migrations/
 - En armario: `mode='product'` (título "Ficha del producto", sin tabs).
 - En venta: `mode='sale'` (mantiene tabs Wallapop/Vinted como antes).
 
-### 2.4 Selectores en vez de input libre 🔧
-- **Talla**: desplegable con opciones (XS, S, M, L, XL, XXL, 34, 36, 38, 40, 42, 44, 46…) + opción "Otra" para custom.
-- **Marca**: combobox con autocompletado que aprende de las marcas que ya hayas metido + opción de añadir nueva.
-- **Material/composición**: lo mismo (algodón, poliéster, lana, seda, denim…).
-- Mejorará consistencia de datos (filtrar por marca Zara siempre encuentra todas las Zara).
+### 2.4 Selectores en vez de input libre ✅
+- Componente genérico **Combobox** (`src/components/shared/Combobox.tsx`) con desplegable, filtro en vivo, navegación con teclado y opción "libre" (acepta valores fuera de las sugerencias).
+- **Talla**: usa `SIZE_OPTIONS` (XS…XXXL + 32-50 + Única) de `src/lib/options.ts`.
+- **Material**: usa `MATERIAL_OPTIONS` con composiciones comunes.
+- **Marca**: combobox alimentado por el hook `useBrands` que devuelve la lista distinta de marcas ya guardadas en BD → autocompletado consistente.
+- Migración `0007_material.sql` añade columna `material` a `clothes`.
+- El campo material se incorpora a la ficha de producto y a la descripción de venta como línea "Composición: …".
 
 ---
 
 ## 3. Funcionalidades planeadas 📦
 
-### 3.1 Web Share Target (alta prioridad)
-- Registrar Mi Armario como **destino de "Compartir"** del sistema operativo.
-- Al compartir desde Zara, Vinted, Instagram, etc., aparezca Mi Armario en el chooser.
-- Al abrirse: preguntar si el enlace/imagen es para:
-  1. **Añadir prenda al armario** (con preview del producto).
-  2. **Añadir a la lista de deseos**.
-  3. **Añadir como prenda a la venta**.
-- Implementación: ampliar `manifest.webmanifest` con `share_target` + ruta `/share` que maneje los parámetros entrantes.
+### 3.1 Web Share Target ✅
+- Manifest extendido con `share_target` (GET con title/text/url).
+- Página `/share` con chooser entre armario / venta / wishlist.
+- `src/lib/sharedItem.ts` para pasar el payload entre la pantalla de share y la página destino vía sessionStorage.
+- `ClotheForm` y `WishlistForm` aceptan `prefill` y abren el formulario pre-rellenado.
+- En wishlist, además, se dispara automáticamente la vista previa de microlink.io con el enlace.
+- Si la URL compartida parece una imagen, se usa directamente como primera foto de la prenda.
+- Se bumpó cache del SW a `mi-armario-v3` para forzar refresco del manifest.
 
 ### 3.2 Tracker de días en venta
 - Indicador visual en cada prenda *En Venta*: "Llevas N días publicada".

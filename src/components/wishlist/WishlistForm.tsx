@@ -6,7 +6,25 @@ import { fetchUrlPreview } from '@/lib/utils'
 import { Trash2, Sparkles } from 'lucide-react'
 import type { WishlistItem } from '@/types/database'
 
-export default function WishlistForm({ open, onClose, item }: { open: boolean; onClose: () => void; item?: WishlistItem | null }) {
+export interface WishlistPrefill {
+  url?: string
+  name?: string
+  notes?: string
+  /** Si true, intenta cargar la vista previa automáticamente al abrir. */
+  autoFetchPreview?: boolean
+}
+
+export default function WishlistForm({
+  open,
+  onClose,
+  item,
+  prefill,
+}: {
+  open: boolean
+  onClose: () => void
+  item?: WishlistItem | null
+  prefill?: WishlistPrefill
+}) {
   const { user } = useAuth()
   const create = useCreateWishlistItem()
   const update = useUpdateWishlistItem()
@@ -23,22 +41,43 @@ export default function WishlistForm({ open, onClose, item }: { open: boolean; o
 
   useEffect(() => {
     if (!open) return
-    setUrl(item?.url ?? '')
-    setName(item?.name ?? '')
-    setPrice(item?.price ? String(item.price) : '')
-    setImageUrl(item?.image_url ?? '')
-    setNotes(item?.notes ?? '')
+    if (item) {
+      setUrl(item.url)
+      setName(item.name ?? '')
+      setPrice(item.price ? String(item.price) : '')
+      setImageUrl(item.image_url ?? '')
+      setNotes(item.notes ?? '')
+    } else {
+      setUrl(prefill?.url ?? '')
+      setName(prefill?.name ?? '')
+      setPrice('')
+      setImageUrl('')
+      setNotes(prefill?.notes ?? '')
+    }
     setError(null)
-  }, [open, item])
+  }, [open, item, prefill])
+
+  // Auto-fetch del preview cuando llega prefill con URL y autoFetchPreview activo
+  useEffect(() => {
+    if (!open || item) return
+    if (prefill?.autoFetchPreview && prefill.url) {
+      doFetchPreview(prefill.url)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, item, prefill?.url, prefill?.autoFetchPreview])
+
+  async function doFetchPreview(targetUrl: string) {
+    setLoadingPreview(true); setError(null)
+    const preview = await fetchUrlPreview(targetUrl)
+    setLoadingPreview(false)
+    if (!preview) { setError('No se pudo obtener la previsualización.'); return }
+    if (preview.title) setName((n) => n || preview.title!)
+    if (preview.image) setImageUrl((u) => u || preview.image!)
+  }
 
   async function handleFetchPreview() {
     if (!url) return
-    setLoadingPreview(true); setError(null)
-    const preview = await fetchUrlPreview(url)
-    setLoadingPreview(false)
-    if (!preview) { setError('No se pudo obtener la previsualización.'); return }
-    if (preview.title && !name) setName(preview.title)
-    if (preview.image && !imageUrl) setImageUrl(preview.image)
+    await doFetchPreview(url)
   }
 
   async function handleSubmit(e: React.FormEvent) {

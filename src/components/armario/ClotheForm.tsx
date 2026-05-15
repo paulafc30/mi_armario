@@ -2,28 +2,40 @@ import { useEffect, useMemo, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import MultiImagePicker, { PickerImage } from '@/components/shared/MultiImagePicker'
 import ColorPicker from '@/components/shared/ColorPicker'
+import Combobox from '@/components/shared/Combobox'
 import DescriptionModal from '@/components/venta/DescriptionModal'
 import { useCategories } from '@/hooks/useCategories'
+import { useBrands } from '@/hooks/useBrands'
 import { useCreateClothe, useDeleteClothe, useUpdateClothe } from '@/hooks/useClothes'
 import { uploadImage, deleteImage } from '@/lib/images'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { SIZE_OPTIONS, MATERIAL_OPTIONS } from '@/lib/options'
 import type { Clothe, ClothesStatus, ClotheImage } from '@/types/database'
 import { Sparkles, Trash2 } from 'lucide-react'
+
+export interface ClothePrefill {
+  name?: string
+  url?: string        // si parece imagen, se usa como primera foto
+  notes?: string
+}
 
 export default function ClotheForm({
   open,
   onClose,
   clothe,
   defaultStatus = 'closet',
+  prefill,
 }: {
   open: boolean
   onClose: () => void
   clothe?: Clothe | null
   defaultStatus?: ClothesStatus
+  prefill?: ClothePrefill
 }) {
   const { user } = useAuth()
   const { data: categories = [] } = useCategories()
+  const { data: brandSuggestions = [] } = useBrands()
   const createMut = useCreateClothe()
   const updateMut = useUpdateClothe()
   const deleteMut = useDeleteClothe()
@@ -33,6 +45,7 @@ export default function ClotheForm({
   const [brand, setBrand] = useState('')
   const [size, setSize] = useState('')
   const [color, setColor] = useState<string | null>(null)
+  const [material, setMaterial] = useState('')
   const [tags, setTags] = useState('')
   const [notes, setNotes] = useState('')
   const [price, setPrice] = useState<string>('')
@@ -50,6 +63,7 @@ export default function ClotheForm({
       setBrand(clothe.brand ?? '')
       setSize(clothe.size ?? '')
       setColor(clothe.color ?? null)
+      setMaterial(clothe.material ?? '')
       setTags(clothe.tags.join(', '))
       setNotes(clothe.notes ?? '')
       setPrice(clothe.price ? String(clothe.price) : '')
@@ -65,12 +79,18 @@ export default function ClotheForm({
           setImages(list.map((it) => ({ kind: 'existing', id: it.id, url: it.url, path: it.path })))
         })
     } else {
-      setName(''); setCategoryId(''); setBrand(''); setSize(''); setColor(null)
-      setTags(''); setNotes(''); setPrice('')
-      setImages([]); setOriginalImages([])
+      setName(prefill?.name ?? '')
+      setCategoryId(''); setBrand(''); setSize(''); setColor(null); setMaterial('')
+      setTags(''); setNotes(prefill?.notes ?? ''); setPrice('')
+      setOriginalImages([])
+      if (prefill?.url && /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(prefill.url)) {
+        setImages([{ kind: 'new-url', tempId: crypto.randomUUID(), url: prefill.url }])
+      } else {
+        setImages([])
+      }
     }
     setError(null)
-  }, [open, clothe])
+  }, [open, clothe, prefill])
 
   /** Construye una prenda "virtual" con los valores actuales del formulario,
    *  para que el modal de descripción pueda generarse sin guardar todavía. */
@@ -91,9 +111,10 @@ export default function ClotheForm({
     brand: brand.trim() || null,
     size: size.trim() || null,
     color,
+    material: material.trim() || null,
     created_at: clothe?.created_at ?? new Date().toISOString(),
     updated_at: clothe?.updated_at ?? new Date().toISOString(),
-  }), [clothe, user, name, categoryId, brand, size, color, tags, notes, price, defaultStatus])
+  }), [clothe, user, name, categoryId, brand, size, color, material, tags, notes, price, defaultStatus])
 
   async function syncImages(clotheId: string, userId: string) {
     const stillThere = new Set(
@@ -136,6 +157,7 @@ export default function ClotheForm({
         brand: brand.trim() || null,
         size: size.trim() || null,
         color,
+        material: material.trim() || null,
         tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
         notes: notes.trim() || null,
         price: price ? Number(price) : null,
@@ -191,12 +213,17 @@ export default function ClotheForm({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="label">Marca</label>
-            <input className="input" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Zara" />
+            <Combobox value={brand} onChange={setBrand} suggestions={brandSuggestions} placeholder="Zara" />
           </div>
           <div>
             <label className="label">Talla</label>
-            <input className="input" value={size} onChange={(e) => setSize(e.target.value)} placeholder="M / 38" />
+            <Combobox value={size} onChange={setSize} suggestions={SIZE_OPTIONS} placeholder="M / 38" />
           </div>
+        </div>
+
+        <div>
+          <label className="label">Material</label>
+          <Combobox value={material} onChange={setMaterial} suggestions={MATERIAL_OPTIONS} placeholder="Algodón" />
         </div>
 
         <div>

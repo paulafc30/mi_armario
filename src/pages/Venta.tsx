@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { consumeSharedPayload } from '@/lib/sharedItem'
+import type { ClothePrefill } from '@/components/armario/ClotheForm'
 import { Plus, Tag } from 'lucide-react'
 import { useClothes } from '@/hooks/useClothes'
 import { useCategories } from '@/hooks/useCategories'
@@ -23,6 +25,22 @@ export default function Venta() {
   const { query } = useSearchStore()
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Clothe | null>(null)
+  const [prefill, setPrefill] = useState<ClothePrefill | undefined>(undefined)
+
+  // Consumir un share apuntado a Venta y abrir el formulario en estado Baúl
+  useEffect(() => {
+    const shared = consumeSharedPayload('venta')
+    if (shared) {
+      setPrefill({
+        name: shared.title || undefined,
+        url: shared.url || undefined,
+        notes: shared.url ? `Compartido desde: ${shared.url}` : undefined,
+      })
+      setEditing(null)
+      setTab('baul')
+      setFormOpen(true)
+    }
+  }, [])
 
   const counts = useMemo(() => {
     const c: Record<ClothesStatus, number> = { closet: 0, baul: 0, en_venta: 0, vendida: 0, archivada: 0 }
@@ -83,7 +101,13 @@ export default function Venta() {
         </div>
       )}
 
-      <ClotheForm open={formOpen} onClose={() => setFormOpen(false)} clothe={editing} defaultStatus={tab} />
+      <ClotheForm
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setPrefill(undefined) }}
+        clothe={editing}
+        defaultStatus={tab}
+        prefill={editing ? undefined : prefill}
+      />
     </div>
   )
 }

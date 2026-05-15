@@ -1,0 +1,48 @@
+/**
+ * Helpers para pasar datos entre la pantalla de Compartir y los formularios
+ * de las páginas destino (armario, venta, wishlist). Se usa sessionStorage
+ * para sobrevivir a la navegación pero no a un cierre completo del navegador.
+ */
+
+const KEY = 'mi-armario:shared'
+
+export type ShareTarget = 'armario' | 'venta' | 'wishlist'
+
+export interface SharedPayload {
+  target: ShareTarget
+  title: string
+  text: string
+  url: string
+}
+
+export function storeSharedPayload(payload: SharedPayload) {
+  try {
+    sessionStorage.setItem(KEY, JSON.stringify(payload))
+  } catch {
+    // ignore (modo privado en Safari, etc.)
+  }
+}
+
+export function consumeSharedPayload(forTarget: ShareTarget): SharedPayload | null {
+  try {
+    const raw = sessionStorage.getItem(KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw) as SharedPayload
+    if (data.target !== forTarget) return null
+    sessionStorage.removeItem(KEY)
+    return data
+  } catch {
+    return null
+  }
+}
+
+/** Extrae la primera URL http(s) que aparezca en el texto. */
+export function extractUrl(text: string): string {
+  const m = text.match(/https?:\/\/[^\s)]+/i)
+  return m ? m[0] : ''
+}
+
+/** ¿La URL parece apuntar directamente a una imagen? */
+export function isImageUrl(url: string): boolean {
+  return /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(url)
+}

@@ -107,6 +107,11 @@ function buildDetails(clothe: Clothe): string {
   return parts.join(' ').replace(/\s+/g, ' ').trim()
 }
 
+function materialLine(clothe: Clothe): string | null {
+  if (!clothe.material || !clothe.material.trim()) return null
+  return `Composición: ${clothe.material.trim()}.`
+}
+
 /**
  * Descripción larga, tono cercano y natural, ideal para Wallapop.
  * Las "notas" del usuario, si existen, sustituyen a la frase de estado.
@@ -121,6 +126,8 @@ export function generateDescription(clothe: Clothe, category?: Category): string
   } else {
     lines.push(pick(CONDITIONS[form]))
   }
+  const ml = materialLine(clothe)
+  if (ml) lines.push(ml)
   if (clothe.price) {
     lines.push(`Lo dejo en ${formatEUR(clothe.price)}€.`)
   }
@@ -157,12 +164,16 @@ export function generateProductDescription(clothe: Clothe, category?: Category):
     lines.push(`Categoría: ${category.name}.`)
   }
 
+  // Composición/material
+  const ml = materialLine(clothe)
+  if (ml) lines.push(ml)
+
   // Etiquetas como descriptores
   if (clothe.tags && clothe.tags.length > 0) {
     lines.push(`Estilo: ${clothe.tags.join(', ')}.`)
   }
 
-  // Notas del usuario o frase neutra
+  // Notas del usuario
   if (clothe.notes && clothe.notes.trim()) {
     lines.push(clothe.notes.trim())
   }
