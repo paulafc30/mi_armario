@@ -138,6 +138,39 @@ function slug(s: string): string {
 }
 
 /**
+ * Descripción de PRODUCTO (ficha catalográfica). Neutra, descriptiva,
+ * sin tono comercial ni precio ni cierre. Útil dentro de Mi Armario
+ * para tener una mini-ficha de la prenda lista para copiar/compartir.
+ */
+export function generateProductDescription(clothe: Clothe, category?: Category): string {
+  const lines: string[] = []
+
+  // Cabecera: nombre con la info esencial
+  const head: string[] = [clothe.name]
+  if (clothe.brand) head.push(clothe.brand)
+  if (clothe.size) head.push(`Talla ${clothe.size}`)
+  if (clothe.color && !colorAlreadyInName(clothe.name, clothe.color)) head.push(clothe.color)
+  lines.push(head.join(' · '))
+
+  // Línea de categoría si está
+  if (category) {
+    lines.push(`Categoría: ${category.name}.`)
+  }
+
+  // Etiquetas como descriptores
+  if (clothe.tags && clothe.tags.length > 0) {
+    lines.push(`Estilo: ${clothe.tags.join(', ')}.`)
+  }
+
+  // Notas del usuario o frase neutra
+  if (clothe.notes && clothe.notes.trim()) {
+    lines.push(clothe.notes.trim())
+  }
+
+  return lines.join('\n\n').trim()
+}
+
+/**
  * Descripción corta con hashtags, ideal para Vinted.
  */
 export function generateShortDescription(clothe: Clothe, category?: Category): string {

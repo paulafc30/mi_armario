@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { LogOut, User, Mail, Lock, Sun, Moon, Monitor, Info, Sparkles } from 'lucide-react'
+import { LogOut, User, Mail, Lock, Sun, Moon, Monitor, Info, Sparkles, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme, ThemeChoice } from '@/lib/theme'
 import { cx } from '@/lib/utils'
+import { uploadAvatar, deleteAvatar } from '@/lib/images'
+import { compressImage } from '@/lib/imageCompression'
 import SettingsRow, { SettingsSection } from '@/components/profile/SettingsRow'
 import EditFieldModal from '@/components/profile/EditFieldModal'
 import ProfileHeader from '@/components/profile/ProfileHeader'
@@ -15,19 +17,75 @@ export default function Profile() {
   const [theme, setTheme] = useTheme()
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarPath, setAvatarPath] = useState<string | null>(null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [editing, setEditing] = useState<Field>(null)
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   useEffect(() => {
     if (!user) return
     setEmail(user.email ?? '')
-    supabase.from('profiles').select('username').eq('id', user.id).single()
-      .then(({ data }) => setUsername(data?.username ?? ''))
+    supabase
+      .from('profiles')
+      .select('username, avatar_url, avatar_path')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        setUsername(data?.username ?? '')
+        setAvatarUrl(data?.avatar_url ?? null)
+        setAvatarPath(data?.avatar_path ?? null)
+      })
   }, [user])
 
   function showToast(kind: 'ok' | 'err', text: string) {
     setToast({ kind, text })
     setTimeout(() => setToast(null), 2500)
+  }
+
+  async function handleAvatarPick(file: File) {
+    if (!user) return
+    setUploadingAvatar(true)
+    try {
+      const compressed = await compressImage(file, { maxSize: 480, quality: 0.85 })
+      const { url, path } = await uploadAvatar(compressed, user.id)
+      // Guardar nueva URL y path en profiles
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: url, avatar_path: path })
+        .eq('id', user.id)
+      if (error) throw error
+      // Borrar la foto antigua si existía
+      if (avatarPath) await deleteAvatar(avatarPath).catch(() => null)
+      setAvatarUrl(url)
+      setAvatarPath(path)
+      showToast('ok', 'Foto actualizada')
+    } catch (err: any) {
+      showToast('err', err?.message ?? 'No se pudo subir la foto')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
+  async function handleAvatarRemove() {
+    if (!user || !avatarPath) return
+    if (!confirm('¿Quitar tu foto de perfil?')) return
+    setUploadingAvatar(true)
+    try {
+      await deleteAvatar(avatarPath).catch(() => null)
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null, avatar_path: null })
+        .eq('id', user.id)
+      if (error) throw error
+      setAvatarUrl(null)
+      setAvatarPath(null)
+      showToast('ok', 'Foto eliminada')
+    } catch (err: any) {
+      showToast('err', err?.message ?? 'No se pudo quitar la foto')
+    } finally {
+      setUploadingAvatar(false)
+    }
   }
 
   async function saveUsername(value: string) {
@@ -57,7 +115,13 @@ export default function Profile() {
 
   return (
     <div className="max-w-md mx-auto px-4 pb-6 space-y-6">
-      <ProfileHeader username={username} email={email} />
+      <ProfileHeader
+        username={username}
+        email={email}
+        avatarUrl={avatarUrl}
+        uploading={uploadingAvatar}
+        onPickFile={handleAvatarPick}
+      />
 
       {toast && (
         <div className={cx(
@@ -69,9 +133,12 @@ export default function Profile() {
       )}
 
       <SettingsSection title="Cuenta">
-        <SettingsRow icon={User}  label="Nombre"     value={username || 'Sin nombre'} onClick={() => setEditing('username')} />
-        <SettingsRow icon={Mail}  label="Email"      value={email}                    onClick={() => setEditing('email')} />
-        <SettingsRow icon={Lock}  label="Contraseña" value="••••••••"                  onClick={() => setEditing('password')} />
+        <SettingsRow icon={User} label="Nombre"     value={username || 'Sin nombre'} onClick={() => setEditing('username')} />
+        <SettingsRow icon={Mail} label="Email"      value={email}                    onClick={() => setEditing('email')} />
+        <SettingsRow icon={Lock} label="Contraseña" value="••••••••"                  onClick={() => setEditing('password')} />
+        {avatarUrl && (
+          <SettingsRow icon={Trash2} iconAccent="rose" label="Quitar foto de perfil" onClick={handleAvatarRemove} chevron={false} />
+        )}
       </SettingsSection>
 
       <SettingsSection title="Apariencia" description={

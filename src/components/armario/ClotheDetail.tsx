@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import ImageCarousel from '@/components/shared/ImageCarousel'
-import DescriptionModal from '@/components/venta/DescriptionModal'
 import { useChangeClothesStatus } from '@/hooks/useClothes'
 import { colorHexByName } from '@/components/shared/ColorPicker'
 import { supabase } from '@/lib/supabase'
 import type { Clothe } from '@/types/database'
-import { ArrowRight, Pencil, Tag, Sparkles } from 'lucide-react'
+import { Pencil, Tag } from 'lucide-react'
 
 export default function ClotheDetail({
   open,
@@ -21,7 +20,6 @@ export default function ClotheDetail({
 }) {
   const changeStatus = useChangeClothesStatus()
   const [galleryUrls, setGalleryUrls] = useState<string[]>([])
-  const [descOpen, setDescOpen] = useState(false)
 
   useEffect(() => {
     if (!open || !clothe) return
@@ -42,6 +40,7 @@ export default function ClotheDetail({
 
   async function moveToVenta() {
     if (!clothe) return
+    if (!confirm(`¿Mover "${clothe.name}" a la sección de Venta?\n\nSe quedará en estado Baúl hasta que la publiques.`)) return
     await changeStatus.mutateAsync({ id: clothe.id, status: 'baul' })
     onClose()
   }
@@ -50,6 +49,7 @@ export default function ClotheDetail({
     <Modal open={open} onClose={onClose} title={clothe.name}>
       <div className="space-y-4">
         <ImageCarousel images={galleryUrls} />
+
         {(clothe.brand || clothe.size || clothe.color) && (
           <div className="flex flex-wrap gap-1.5">
             {clothe.brand && <span className="chip bg-surface-soft text-ink/80">{clothe.brand}</span>}
@@ -70,6 +70,7 @@ export default function ClotheDetail({
             )}
           </div>
         )}
+
         {clothe.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {clothe.tags.map((t) => (
@@ -77,24 +78,22 @@ export default function ClotheDetail({
             ))}
           </div>
         )}
+
         {clothe.notes && <p className="text-sm text-muted whitespace-pre-line">{clothe.notes}</p>}
 
-        <div className="space-y-2 pt-2">
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={onEdit} className="btn-secondary">
-              <Pencil className="w-4 h-4" /> Editar
-            </button>
-            <button onClick={() => setDescOpen(true)} className="btn-secondary">
-              <Sparkles className="w-4 h-4" /> Descripción
-            </button>
-          </div>
-          <button onClick={moveToVenta} className="btn-primary w-full">
-            Mover a Venta <ArrowRight className="w-4 h-4" />
+        {/* Acción primaria: editar la prenda */}
+        <button onClick={onEdit} className="btn-primary w-full">
+          <Pencil className="w-4 h-4" /> Editar
+        </button>
+
+        {/* Acción secundaria, deliberadamente discreta */}
+        <div className="pt-3 mt-1 border-t border-line-soft">
+          <button onClick={moveToVenta}
+            className="w-full py-2 text-xs text-muted hover:text-ink transition">
+            Mover a la sección de Venta
           </button>
         </div>
       </div>
-
-      <DescriptionModal open={descOpen} onClose={() => setDescOpen(false)} clothe={clothe} />
     </Modal>
   )
 }

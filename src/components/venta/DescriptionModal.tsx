@@ -1,24 +1,35 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Copy, Check, RefreshCw } from 'lucide-react'
 import Modal from '@/components/shared/Modal'
-import { generateDescription, generateShortDescription } from '@/lib/description'
+import {
+  generateDescription,
+  generateShortDescription,
+  generateProductDescription,
+} from '@/lib/description'
 import { useCategories } from '@/hooks/useCategories'
 import { cx } from '@/lib/utils'
 import type { Clothe } from '@/types/database'
 
-type Variant = 'wallapop' | 'vinted'
+type SaleVariant = 'wallapop' | 'vinted'
+export type DescriptionMode = 'sale' | 'product'
 
 export default function DescriptionModal({
   open,
   onClose,
   clothe,
+  mode = 'sale',
 }: {
   open: boolean
   onClose: () => void
   clothe: Clothe | null
+  /**
+   * 'sale'    → genera texto para anuncio (Wallapop / Vinted, con dos pestañas).
+   * 'product' → genera ficha catalogada del producto (neutra, sin tabs).
+   */
+  mode?: DescriptionMode
 }) {
   const { data: categories = [] } = useCategories()
-  const [variant, setVariant] = useState<Variant>('wallapop')
+  const [variant, setVariant] = useState<SaleVariant>('wallapop')
   const [version, setVersion] = useState(0)
   const [edited, setEdited] = useState('')
   const [copied, setCopied] = useState(false)
@@ -26,13 +37,13 @@ export default function DescriptionModal({
   const generated = useMemo(() => {
     if (!clothe) return ''
     const cat = categories.find((c) => c.id === clothe.category_id)
+    if (mode === 'product') return generateProductDescription(clothe, cat)
     return variant === 'wallapop'
       ? generateDescription(clothe, cat)
       : generateShortDescription(clothe, cat)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clothe, categories, variant, version])
+  }, [clothe, categories, variant, version, mode])
 
-  // Cuando se regenera (cambia generated), reflejarlo en el textarea editable
   useEffect(() => { setEdited(generated) }, [generated])
 
   async function handleCopy() {
@@ -50,26 +61,30 @@ export default function DescriptionModal({
 
   if (!clothe) return null
 
+  const title = mode === 'product' ? 'Ficha del producto' : 'Descripción del anuncio'
+
   return (
-    <Modal open={open} onClose={onClose} title="Descripción">
+    <Modal open={open} onClose={onClose} title={title}>
       <div className="space-y-4">
-        <div className="flex gap-1 bg-surface-soft rounded-xl p-1">
-          <button onClick={() => setVariant('wallapop')}
-            className={cx('flex-1 py-1.5 rounded-lg text-sm font-medium transition',
-              variant === 'wallapop' ? 'bg-surface shadow text-ink' : 'text-muted')}>
-            Wallapop
-          </button>
-          <button onClick={() => setVariant('vinted')}
-            className={cx('flex-1 py-1.5 rounded-lg text-sm font-medium transition',
-              variant === 'vinted' ? 'bg-surface shadow text-ink' : 'text-muted')}>
-            Vinted
-          </button>
-        </div>
+        {mode === 'sale' && (
+          <div className="flex gap-1 bg-surface-soft rounded-xl p-1">
+            <button onClick={() => setVariant('wallapop')}
+              className={cx('flex-1 py-1.5 rounded-lg text-sm font-medium transition',
+                variant === 'wallapop' ? 'bg-surface shadow text-ink' : 'text-muted')}>
+              Wallapop
+            </button>
+            <button onClick={() => setVariant('vinted')}
+              className={cx('flex-1 py-1.5 rounded-lg text-sm font-medium transition',
+                variant === 'vinted' ? 'bg-surface shadow text-ink' : 'text-muted')}>
+              Vinted
+            </button>
+          </div>
+        )}
 
         <textarea
           value={edited}
           onChange={(e) => setEdited(e.target.value)}
-          className="input min-h-[220px] leading-relaxed"
+          className="input min-h-[200px] leading-relaxed"
         />
 
         <div className="flex gap-2">
@@ -82,7 +97,9 @@ export default function DescriptionModal({
         </div>
 
         <p className="text-xs text-muted text-center">
-          Edita lo que quieras antes de copiar. Pulsa "Regenerar" para probar otra redacción. Se construye a partir del nombre, marca, talla, color y notas de la prenda.
+          {mode === 'product'
+            ? 'Ficha catalográfica de la prenda. Edita lo que quieras antes de copiar.'
+            : 'Edita lo que quieras antes de copiar. Pulsa "Regenerar" para probar otra redacción.'}
         </p>
       </div>
     </Modal>

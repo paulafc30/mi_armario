@@ -4,7 +4,7 @@ import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory 
 import { useAuth } from '@/hooks/useAuth'
 import { Pencil, Plus, Trash2, Check, X } from 'lucide-react'
 
-const COLORS = ['#a855f7', '#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#6366f1', '#ef4444', '#14b8a6']
+const COLORS = ['#dc3a2a', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b']
 
 export default function CategoryManager({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { user } = useAuth()

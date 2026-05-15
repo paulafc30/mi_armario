@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import MultiImagePicker, { PickerImage } from '@/components/shared/MultiImagePicker'
 import ColorPicker from '@/components/shared/ColorPicker'
+import DescriptionModal from '@/components/venta/DescriptionModal'
 import { useCategories } from '@/hooks/useCategories'
 import { useCreateClothe, useDeleteClothe, useUpdateClothe } from '@/hooks/useClothes'
 import { uploadImage, deleteImage } from '@/lib/images'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import type { Clothe, ClothesStatus, ClotheImage } from '@/types/database'
-import { Trash2 } from 'lucide-react'
+import { Sparkles, Trash2 } from 'lucide-react'
 
 export default function ClotheForm({
   open,
@@ -39,6 +40,7 @@ export default function ClotheForm({
   const [originalImages, setOriginalImages] = useState<ClotheImage[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [descOpen, setDescOpen] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -51,7 +53,6 @@ export default function ClotheForm({
       setTags(clothe.tags.join(', '))
       setNotes(clothe.notes ?? '')
       setPrice(clothe.price ? String(clothe.price) : '')
-      // Cargar imágenes existentes desde clothe_images, ordenadas por position
       supabase
         .from('clothe_images')
         .select('*')
@@ -71,8 +72,30 @@ export default function ClotheForm({
     setError(null)
   }, [open, clothe])
 
+  /** Construye una prenda "virtual" con los valores actuales del formulario,
+   *  para que el modal de descripción pueda generarse sin guardar todavía. */
+  const virtualClothe = useMemo<Clothe>(() => ({
+    id: clothe?.id ?? 'preview',
+    user_id: user?.id ?? '',
+    name: name.trim() || 'Sin nombre',
+    category_id: categoryId || null,
+    image_url: null,
+    image_path: null,
+    notes: notes.trim() || null,
+    tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
+    status: clothe?.status ?? defaultStatus,
+    on_wallapop: clothe?.on_wallapop ?? false,
+    on_vinted: clothe?.on_vinted ?? false,
+    price: price ? Number(price) : null,
+    sold_at: clothe?.sold_at ?? null,
+    brand: brand.trim() || null,
+    size: size.trim() || null,
+    color,
+    created_at: clothe?.created_at ?? new Date().toISOString(),
+    updated_at: clothe?.updated_at ?? new Date().toISOString(),
+  }), [clothe, user, name, categoryId, brand, size, color, tags, notes, price, defaultStatus])
+
   async function syncImages(clotheId: string, userId: string) {
-    // 1. Borrar imágenes que estaban antes y ya no están
     const stillThere = new Set(
       images.filter((i) => i.kind === 'existing').map((i) => i.kind === 'existing' ? i.id : '')
     )
@@ -82,7 +105,6 @@ export default function ClotheForm({
       await supabase.from('clothe_images').delete().eq('id', orig.id)
     }
 
-    // 2. Recorrer en orden e insertar/actualizar
     for (let i = 0; i < images.length; i++) {
       const item = images[i]
       if (item.kind === 'existing') {
@@ -193,8 +215,20 @@ export default function ClotheForm({
         </div>
 
         <div>
-          <label className="label">Notas</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="label mb-0">Notas</span>
+            <button
+              type="button"
+              onClick={() => setDescOpen(true)}
+              disabled={!name.trim()}
+              className="text-xs font-semibold text-brand-700 hover:text-brand-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              title="Generar ficha del producto"
+            >
+              <Sparkles className="w-3.5 h-3.5" /> Generar ficha
+            </button>
+          </div>
           <textarea className="input min-h-[80px]" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <p className="text-xs text-muted mt-1">Notas internas: cómo te queda, dónde la compraste, recuerdos…</p>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
@@ -211,6 +245,13 @@ export default function ClotheForm({
           </button>
         </div>
       </form>
+
+      <DescriptionModal
+        open={descOpen}
+        onClose={() => setDescOpen(false)}
+        clothe={virtualClothe}
+        mode="product"
+      />
     </Modal>
   )
 }

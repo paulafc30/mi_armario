@@ -21,7 +21,7 @@ export function applyTheme(theme: ThemeChoice) {
   else root.classList.remove('dark')
   // Actualiza la meta theme-color para que el navegador pinte la barra superior coherente
   const meta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null
-  if (meta) meta.content = resolved === 'dark' ? '#0b0916' : '#7c3aed'
+  if (meta) meta.content = resolved === 'dark' ? '#120a08' : '#dc3a2a'
 }
 
 function resolveTheme(theme: ThemeChoice): 'light' | 'dark' {

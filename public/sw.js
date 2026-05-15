@@ -1,6 +1,6 @@
 // Service worker mínimo para que la app sea instalable como PWA.
 // Estrategia simple: network-first y cae al cache si no hay red.
-const CACHE = 'mi-armario-v1'
+const CACHE = 'mi-armario-v2'
 const ASSETS = ['/', '/armario', '/manifest.webmanifest', '/favicon.svg']
 
 self.addEventListener('install', (event) => {

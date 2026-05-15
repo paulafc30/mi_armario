@@ -22,3 +22,28 @@ export async function deleteImage(path: string | null | undefined) {
   if (!path) return
   await supabase.storage.from(STORAGE_BUCKET).remove([path])
 }
+
+const AVATARS_BUCKET = 'avatars'
+
+/** Sube una foto de perfil al bucket 'avatars' bajo <user_id>/<uuid>. */
+export async function uploadAvatar(file: File, userId: string): Promise<{ url: string; path: string }> {
+  const ext = (file.name.split('.').pop() ?? 'jpg').toLowerCase()
+  const fileName = `${crypto.randomUUID()}.${ext}`
+  const path = `${userId}/${fileName}`
+
+  const { error } = await supabase.storage.from(AVATARS_BUCKET).upload(path, file, {
+    cacheControl: '3600',
+    upsert: false,
+    contentType: file.type,
+  })
+  if (error) throw error
+
+  const { data } = supabase.storage.from(AVATARS_BUCKET).getPublicUrl(path)
+  return { url: data.publicUrl, path }
+}
+
+/** Borra una foto de perfil del bucket 'avatars'. */
+export async function deleteAvatar(path: string | null | undefined) {
+  if (!path) return
+  await supabase.storage.from(AVATARS_BUCKET).remove([path])
+}
