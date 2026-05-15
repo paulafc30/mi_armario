@@ -51,7 +51,7 @@ export default function DescriptionModal({
   if (!clothe) return null
 
   return (
-    <Modal open={open} onClose={onClose} title="Descripción del anuncio">
+    <Modal open={open} onClose={onClose} title="Descripción">
       <div className="space-y-4">
         <div className="flex gap-1 bg-surface-soft rounded-xl p-1">
           <button onClick={() => setVariant('wallapop')}
@@ -82,7 +82,7 @@ export default function DescriptionModal({
         </div>
 
         <p className="text-xs text-muted text-center">
-          Edita lo que quieras antes de copiar. Se genera a partir del nombre, marca, talla, color y notas.
+          Edita lo que quieras antes de copiar. Pulsa "Regenerar" para probar otra redacción. Se construye a partir del nombre, marca, talla, color y notas de la prenda.
         </p>
       </div>
     </Modal>

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import ImageCarousel from '@/components/shared/ImageCarousel'
+import DescriptionModal from '@/components/venta/DescriptionModal'
 import { useChangeClothesStatus } from '@/hooks/useClothes'
 import { colorHexByName } from '@/components/shared/ColorPicker'
 import { supabase } from '@/lib/supabase'
-import type { Clothe, ClotheImage } from '@/types/database'
-import { ArrowRight, Pencil, Tag } from 'lucide-react'
+import type { Clothe } from '@/types/database'
+import { ArrowRight, Pencil, Tag, Sparkles } from 'lucide-react'
 
 export default function ClotheDetail({
   open,
@@ -20,6 +21,7 @@ export default function ClotheDetail({
 }) {
   const changeStatus = useChangeClothesStatus()
   const [galleryUrls, setGalleryUrls] = useState<string[]>([])
+  const [descOpen, setDescOpen] = useState(false)
 
   useEffect(() => {
     if (!open || !clothe) return
@@ -77,13 +79,22 @@ export default function ClotheDetail({
         )}
         {clothe.notes && <p className="text-sm text-muted whitespace-pre-line">{clothe.notes}</p>}
 
-        <div className="grid grid-cols-2 gap-2 pt-2">
-          <button onClick={onEdit} className="btn-secondary"><Pencil className="w-4 h-4" /> Editar</button>
-          <button onClick={moveToVenta} className="btn-primary">
+        <div className="space-y-2 pt-2">
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={onEdit} className="btn-secondary">
+              <Pencil className="w-4 h-4" /> Editar
+            </button>
+            <button onClick={() => setDescOpen(true)} className="btn-secondary">
+              <Sparkles className="w-4 h-4" /> Descripción
+            </button>
+          </div>
+          <button onClick={moveToVenta} className="btn-primary w-full">
             Mover a Venta <ArrowRight className="w-4 h-4" />
           </button>
         </div>
       </div>
+
+      <DescriptionModal open={descOpen} onClose={() => setDescOpen(false)} clothe={clothe} />
     </Modal>
   )
 }
