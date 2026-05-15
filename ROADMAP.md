@@ -1,0 +1,241 @@
+# Mi Armario — Roadmap y notas
+
+> Documento vivo. Aquí queda registrado **todo** lo que se ha construido,
+> lo que está en curso, lo que está pendiente y las ideas para el futuro.
+> Sirve como memoria del proyecto: si en cualquier momento se interrumpe
+> la conversación, este archivo permite retomar exactamente donde se dejó.
+
+Última actualización: 2026-05-15
+
+---
+
+## 0. Stack y arquitectura
+
+- **Frontend:** Vite + React + TypeScript + TailwindCSS + Zustand + React Query + React Router + lucide-react.
+- **Backend:** Supabase (Auth + PostgreSQL + Storage).
+- **Despliegue:** Vercel (frontend) + Supabase managed (backend).
+- **PWA:** manifest + service worker, instalable en iOS y Android.
+- **Localhost:** puerto **5174**.
+
+Estructura del repo:
+```
+src/
+  ├── components/   (armario, venta, wishlist, calendario, profile, shared, auth)
+  ├── hooks/        (useAuth, useClothes, useCategories, useOutfits, useWears, useWishlist)
+  ├── lib/          (supabase, images, imageCompression, description, calendar, theme, utils)
+  ├── pages/        (Login, Register, ForgotPassword, ResetPassword, Profile, Armario, Venta, Wishlist)
+  ├── store/        (search)
+  └── types/        (database)
+supabase/migrations/
+  ├── 0001_initial_schema.sql   (tablas base + RLS + bucket clothes-images)
+  ├── 0002_extra_fields.sql     (brand, size, color en clothes)
+  ├── 0003_clothe_images.sql    (tabla clothe_images + trigger portada)
+  ├── 0004_wears.sql            (calendario)
+  ├── 0005_grants.sql           (GRANTs explícitos)
+  └── 0006_avatars.sql          (avatar_path + bucket avatars)
+```
+
+---
+
+## 1. Implementado ✅
+
+### 1.1 Auth y perfil
+- Registro y login con email + contraseña.
+- Recuperación de contraseña por email.
+- ProtectedRoute → la app entera detrás de sesión.
+- Página de Perfil rediseñada estilo Ajustes de iOS:
+  - Avatar con upload (comprimido 480px, JPEG 0.85).
+  - Filas tipo lista (Nombre, Email, Contraseña) con modales para editar.
+  - Toggle Apariencia (Claro / Oscuro / Sistema).
+  - Sección Acerca de.
+  - Cerrar sesión como fila destructiva.
+  - Quitar foto de perfil cuando existe.
+- Persistencia del tema en localStorage; aplicación pre-render para evitar flash.
+
+### 1.2 Mi Armario
+- CRUD de prendas con: nombre, categoría, marca, talla, color (paleta visual), notas, etiquetas, precio.
+- **MultiImagePicker** con galería de varias fotos:
+  - Drag & drop.
+  - Selección múltiple.
+  - Botón ⭐ para cambiar portada.
+  - Subir desde dispositivo o pegar URL.
+  - Compresión automática (1600px máx, JPEG 0.82, salta si <400 KB).
+- **ImageCarousel** en el detalle de la prenda (puntos, flechas, miniaturas).
+- Trigger en BD que mantiene `clothes.image_url` sincronizado con la primera imagen.
+- Categorías editables (CRUD) con colores personalizables.
+- Categorías por defecto al registrarse (Camisetas, Pantalones, Vestidos, Zapatos, Accesorios, Abrigos).
+- Outfits: colecciones de prendas con previsualización en mosaico.
+- Búsqueda global filtrando por nombre, marca, color, talla, etiquetas, categoría.
+
+### 1.3 Ropa a la Venta
+- Cuatro estados con flujo progresivo: **Baúl → En Venta → Vendida → Archivada**.
+- Botones para avanzar/retroceder estado en cada card.
+- Toggles **Wallapop** y **Vinted** con iconos oficiales (Simple Icons CDN, con fallback).
+- Generador de descripciones automáticas (`lib/description.ts`):
+  - Concordancia de género (fem/masc) y número (singular/plural).
+  - Evita redundancia "color X" si ya está en el nombre.
+  - 4 aperturas + 5 condiciones + 6 cierres por género/número → >100 variantes.
+  - Versión Wallapop (larga, narrativa) y Vinted (corta con hashtags).
+  - Botón "Regenerar" para nueva redacción.
+  - Botón "Copiar" al portapapeles.
+
+### 1.4 Lista de Deseos
+- CRUD de items.
+- Preview automático de URL (título + imagen) usando microlink.io.
+- Mostrar nombre, precio, imagen, enlace clicable a la tienda.
+
+### 1.5 Calendario
+- Pestaña dentro de Mi Armario.
+- Vista mensual (grid 7x6 empezando en lunes).
+- Cada día muestra mini-thumbnails de lo que se llevó.
+- Modal de detalle al tocar un día: lista de wears con miniatura, badge (prenda/outfit), botón eliminar.
+- Añadir prenda u outfit a un día con buscador.
+- Stats del mes activo: looks totales, días registrados, % cobertura, prenda top, outfit top.
+
+### 1.6 Estética (paleta coral cálida)
+- Paleta brand: coral cálido tirando a rojo (#fff3f0 → #400d08).
+- Tokens semánticos via CSS variables → modo oscuro completo.
+- Glass nav (header + bottom nav flotante con backdrop-blur).
+- Hero gradient en pantallas de auth.
+- Inter font desde Google Fonts.
+- Sombras suaves con tinte coral.
+- Animaciones sutiles (fade-in, scale-in).
+
+### 1.7 Infra y seguridad
+- Row Level Security en todas las tablas.
+- GRANTs explícitos (preparado para el cambio de Supabase del 30-oct-2026).
+- Bucket `clothes-images` con políticas por carpeta de usuario.
+- Bucket `avatars` con políticas por carpeta de usuario.
+- PWA instalable: manifest, service worker v2, iconos PNG (192/512/maskable/apple-touch).
+- vercel.json con rewrites para SPA routing.
+
+---
+
+## 2. En curso / pendiente inmediato 🔧
+
+### 2.1 Auditoría visual de paleta ✅
+- Hecho. Grep limpio: no quedan hex morados ni clases `purple/violet` en el código. Las únicas referencias al morado son intencionales (opción de color "Morado" para prendas y opción `#8b5cf6` en la paleta de colores de categorías). La paleta por defecto de categorías ahora arranca con coral.
+- Si se sigue viendo morado, es cache de PWA / navegador → desinstalar la PWA o `Ctrl+Shift+R`.
+
+### 2.2 Reorganizar acciones del ClotheDetail ✅
+- "Descripción" ya **no aparece en el detalle**; vive dentro del formulario de edición (próximo a Notas, link `Generar ficha`).
+- "Editar" es ahora la acción primaria full-width.
+- "Mover a la sección de Venta" se ha movido a una línea de texto pequeña en gris debajo de un separador, con confirmación nativa antes de aplicar el cambio.
+
+### 2.3 Tipos de descripción ✅
+- Nueva función `generateProductDescription` en `src/lib/description.ts` que produce ficha catalográfica neutra (sin "¡Vendo!", sin precio, sin cierre amable).
+- `DescriptionModal` acepta `mode='product' | 'sale'`.
+- En armario: `mode='product'` (título "Ficha del producto", sin tabs).
+- En venta: `mode='sale'` (mantiene tabs Wallapop/Vinted como antes).
+
+### 2.4 Selectores en vez de input libre 🔧
+- **Talla**: desplegable con opciones (XS, S, M, L, XL, XXL, 34, 36, 38, 40, 42, 44, 46…) + opción "Otra" para custom.
+- **Marca**: combobox con autocompletado que aprende de las marcas que ya hayas metido + opción de añadir nueva.
+- **Material/composición**: lo mismo (algodón, poliéster, lana, seda, denim…).
+- Mejorará consistencia de datos (filtrar por marca Zara siempre encuentra todas las Zara).
+
+---
+
+## 3. Funcionalidades planeadas 📦
+
+### 3.1 Web Share Target (alta prioridad)
+- Registrar Mi Armario como **destino de "Compartir"** del sistema operativo.
+- Al compartir desde Zara, Vinted, Instagram, etc., aparezca Mi Armario en el chooser.
+- Al abrirse: preguntar si el enlace/imagen es para:
+  1. **Añadir prenda al armario** (con preview del producto).
+  2. **Añadir a la lista de deseos**.
+  3. **Añadir como prenda a la venta**.
+- Implementación: ampliar `manifest.webmanifest` con `share_target` + ruta `/share` que maneje los parámetros entrantes.
+
+### 3.2 Tracker de días en venta
+- Indicador visual en cada prenda *En Venta*: "Llevas N días publicada".
+- Aviso si pasa de un umbral configurable (ej. 30 días) → sugerencia de bajar precio o retirar.
+- Necesita guardar la fecha en la que pasó a estado *en_venta*.
+
+### 3.3 Stats de ventas
+- Sección de dashboard: cuánto has ganado, cuánto invertiste, neto recuperado.
+- Prenda mejor vendida (mayor margen).
+- Plataforma más eficaz (Wallapop vs Vinted).
+- Necesita: campo `purchase_price` opcional en `clothes`, fecha de venta ya guardada.
+
+### 3.4 Drag-reorder de fotos
+- En `MultiImagePicker`, permitir arrastrar las miniaturas para reordenar.
+- Hoy solo se puede promover una a portada con la estrella; un drag-drop daría flexibilidad total.
+
+### 3.5 Stats avanzadas del calendario
+- "Prenda no usada en los últimos X días" → sugerencia para mover a Baúl/Venta.
+- Histograma de looks por mes.
+- Calor por día de la semana (qué día te arreglas más).
+
+---
+
+## 4. Backlog / ideas futuras 💡
+
+### 4.1 Escáner inteligente de prendas con IA
+- **Requiere API de pago (Claude Vision, Google Gemini, OpenAI).**
+- Foto de la prenda o de la etiqueta → IA identifica:
+  - Tipo de prenda + categoría sugerida.
+  - Marca (si la etiqueta es legible).
+  - Composición del tejido.
+  - Instrucciones de lavado.
+- Rellena automáticamente el formulario al añadir prenda.
+- Aplazado mientras no haya presupuesto recurrente.
+
+### 4.2 Compartir outfit como imagen
+- Generar un collage 2x2 o 3x3 con las prendas de un outfit.
+- Botón "Compartir" → genera PNG → abre share del sistema.
+- Útil para mandar a una amiga "¿qué te parece este look?".
+
+### 4.3 Notificaciones push
+- Recordatorios programados ("¿qué llevaste hoy?", "revisa tu armario").
+- Avisos de prendas en venta sin movimiento.
+
+### 4.4 Exportar todo el armario
+- Botón en Perfil → genera CSV/JSON con todas las prendas, outfits, wears.
+- Útil para backup personal o migración.
+
+### 4.5 Reconocimiento automático de color
+- Al subir foto, extraer color dominante con `Vibrant.js` o canvas.
+- Sugerirlo como color de la prenda (modificable).
+
+### 4.6 Múltiples wishlist
+- Carpetas dentro de la wishlist ("verano", "regalos", "rebajas enero").
+
+### 4.7 Tests
+- Vitest para hooks y librerías.
+- Playwright para flujos end-to-end (auth, crear prenda, mover a venta).
+
+### 4.8 Política de privacidad y términos
+- Páginas estáticas accesibles desde Perfil.
+- Modelo de privacidad simple: tus datos viven solo en tu cuenta de Supabase.
+
+---
+
+## 5. Cambios importantes a recordar
+
+- **30-oct-2026**: Supabase exigirá GRANTs explícitos para Data API en `public`. Mitigado con `0005_grants.sql` y patrón documentado.
+- **Recreación del proyecto Supabase**: tras recrearlo, ejecutar **todas** las migraciones en orden (0001 → 0006).
+- **PWA actualizada**: bumpear `CACHE` en `sw.js` cuando haya cambios grandes para forzar refresco.
+- **Site URL en Supabase**: debe apuntar tanto a `http://localhost:5174` (dev) como a la URL de producción de Vercel.
+
+---
+
+## 6. Decisiones tomadas (para no rebatirlas)
+
+- **Sin Tailwind dark variants explícitas en cada componente** → se usa CSS variables semánticas (surface, ink, muted, line) que se cambian automáticamente. Componentes solo usan tokens, no colores específicos.
+- **Storage por bucket**: `clothes-images` para fotos de prendas, `avatars` para fotos de perfil. Ambos públicos pero con políticas que limitan escritura a la carpeta del usuario.
+- **Tono de descripciones**: cercano y amigable, con emoji al final. Cuatro variantes por género/número.
+- **Compresión client-side antes de subir** (no server-side) → más rápido, menos cuota de Supabase.
+- **No usar plugins externos para drag-drop** → todo con APIs nativas HTML5 para mantener bundle ligero.
+- **Stack sin Next.js** → Vite puro porque no necesitamos SSR ni rutas server-side. PWA + SPA funciona perfecto.
+
+---
+
+## 7. Cómo retomar el proyecto si han pasado semanas
+
+1. `git pull` para traer los últimos cambios.
+2. `npm install` por si han cambiado dependencias.
+3. Revisar `supabase/migrations/` y ejecutar las que falten en Supabase.
+4. `.env` con `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
+5. `npm run dev` → http://localhost:5174.
+6. Leer la sección **2. En curso** de este documento para saber por dónde íbamos.
