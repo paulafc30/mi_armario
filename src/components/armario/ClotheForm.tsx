@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { SIZE_OPTIONS, MATERIAL_OPTIONS } from '@/lib/options'
 import { fetchUrlPreview } from '@/lib/utils'
 import { isImageUrl } from '@/lib/sharedItem'
+import { useConfirm } from '@/components/shared/ConfirmModal'
 import type { Clothe, ClothesStatus, ClotheImage } from '@/types/database'
 import { Loader2, Sparkles, Trash2 } from 'lucide-react'
 
@@ -41,6 +42,7 @@ export default function ClotheForm({
   const createMut = useCreateClothe()
   const updateMut = useUpdateClothe()
   const deleteMut = useDeleteClothe()
+  const confirm = useConfirm()
 
   const [name, setName] = useState('')
   const [categoryId, setCategoryId] = useState<string>('')
@@ -205,7 +207,13 @@ export default function ClotheForm({
 
   async function handleDelete() {
     if (!clothe) return
-    if (!confirm('¿Eliminar esta prenda?')) return
+    const ok = await confirm({
+      title: 'Eliminar prenda',
+      message: `Vas a borrar "${clothe.name}" y todas sus fotos. Esta acción no se puede deshacer.`,
+      confirmText: 'Eliminar',
+      destructive: true,
+    })
+    if (!ok) return
     await deleteMut.mutateAsync(clothe)
     onClose()
   }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ImageOff, ArrowRight, ArrowLeft, Check, Trash2, Sparkles } from 'lucide-react'
 import type { Clothe, ClothesStatus } from '@/types/database'
 import { useChangeClothesStatus, useDeleteClothe, useUpdateClothe } from '@/hooks/useClothes'
+import { useConfirm } from '@/components/shared/ConfirmModal'
 import { cx, formatPrice, formatDate } from '@/lib/utils'
 import DescriptionModal from './DescriptionModal'
 import { WallapopIcon, VintedIcon, WALLAPOP_COLOR, VINTED_COLOR } from './PlatformIcons'
@@ -34,6 +35,7 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
   const change = useChangeClothesStatus()
   const update = useUpdateClothe()
   const del = useDeleteClothe()
+  const confirm = useConfirm()
   const [descOpen, setDescOpen] = useState(false)
 
   const next = NEXT[clothe.status]
@@ -126,8 +128,15 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
               {NEXT_LABEL[clothe.status]}
             </button>
           )}
-          <button onClick={() => { if (confirm('¿Eliminar?')) del.mutate(clothe) }}
-            className="btn-ghost px-2 py-1.5 text-red-600">
+          <button onClick={async () => {
+            const ok = await confirm({
+              title: 'Eliminar prenda',
+              message: `Vas a borrar "${clothe.name}" y todas sus fotos.`,
+              confirmText: 'Eliminar',
+              destructive: true,
+            })
+            if (ok) del.mutate(clothe)
+          }} className="btn-ghost px-2 py-1.5 text-red-600">
             <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>

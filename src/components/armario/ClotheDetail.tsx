@@ -3,6 +3,7 @@ import Modal from '@/components/shared/Modal'
 import ImageCarousel from '@/components/shared/ImageCarousel'
 import { useChangeClothesStatus } from '@/hooks/useClothes'
 import { colorHexByName } from '@/components/shared/ColorPicker'
+import { useConfirm } from '@/components/shared/ConfirmModal'
 import { supabase } from '@/lib/supabase'
 import type { Clothe } from '@/types/database'
 import { Pencil, Tag } from 'lucide-react'
@@ -19,6 +20,7 @@ export default function ClotheDetail({
   onEdit: () => void
 }) {
   const changeStatus = useChangeClothesStatus()
+  const confirm = useConfirm()
   const [galleryUrls, setGalleryUrls] = useState<string[]>([])
 
   useEffect(() => {
@@ -40,7 +42,12 @@ export default function ClotheDetail({
 
   async function moveToVenta() {
     if (!clothe) return
-    if (!confirm(`¿Mover "${clothe.name}" a la sección de Venta?\n\nSe quedará en estado Baúl hasta que la publiques.`)) return
+    const ok = await confirm({
+      title: 'Mover a la sección de Venta',
+      message: `Vas a mover "${clothe.name}" a Venta. Se quedará en estado Baúl hasta que la publiques.`,
+      confirmText: 'Mover',
+    })
+    if (!ok) return
     await changeStatus.mutateAsync({ id: clothe.id, status: 'baul' })
     onClose()
   }

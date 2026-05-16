@@ -101,7 +101,17 @@ supabase/migrations/
 - Sombras suaves con tinte coral.
 - Animaciones sutiles (fade-in, scale-in).
 
-### 1.7 Infra y seguridad
+### 1.7 Interacción y feedback
+- **Modales de confirmación personalizados** (`src/components/shared/ConfirmModal.tsx`):
+  - Sistema basado en promesas: `const confirm = useConfirm(); const ok = await confirm({ … })`.
+  - `ConfirmProvider` montado en `main.tsx` envuelve toda la app.
+  - Soporta título, mensaje multilínea, texto custom para Confirmar/Cancelar y modo destructivo (botón rojo + foco en Cancelar para evitar accidentes).
+  - Sustituye al `window.confirm` nativo en TODOS los puntos: borrar prenda, borrar outfit, borrar categoría, borrar wishlist item, quitar foto de perfil, cerrar sesión, mover a Venta.
+  - Z-index 40 → aparece sobre cualquier otro modal abierto.
+- Toasts auto-desaparecibles (en perfil): operaciones rápidas con feedback no bloqueante.
+- Loading states en formularios y botones críticos.
+
+### 1.8 Infra y seguridad
 - Row Level Security en todas las tablas.
 - GRANTs explícitos (preparado para el cambio de Supabase del 30-oct-2026).
 - Bucket `clothes-images` con políticas por carpeta de usuario.

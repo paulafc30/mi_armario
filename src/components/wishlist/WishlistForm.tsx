@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import { useCreateWishlistItem, useUpdateWishlistItem, useDeleteWishlistItem } from '@/hooks/useWishlist'
 import { useAuth } from '@/hooks/useAuth'
+import { useConfirm } from '@/components/shared/ConfirmModal'
 import { fetchUrlPreview } from '@/lib/utils'
 import { Trash2, Sparkles } from 'lucide-react'
 import type { WishlistItem } from '@/types/database'
@@ -29,6 +30,7 @@ export default function WishlistForm({
   const create = useCreateWishlistItem()
   const update = useUpdateWishlistItem()
   const del = useDeleteWishlistItem()
+  const confirm = useConfirm()
 
   const [url, setUrl] = useState('')
   const [name, setName] = useState('')
@@ -150,7 +152,13 @@ export default function WishlistForm({
         <div className="flex gap-2 pt-2">
           {item && (
             <button type="button" onClick={async () => {
-              if (confirm('¿Eliminar?')) { await del.mutateAsync(item.id); onClose() }
+              const ok = await confirm({
+                title: 'Eliminar de deseos',
+                message: `Vas a borrar "${item.name ?? item.url}" de tu lista de deseos.`,
+                confirmText: 'Eliminar',
+                destructive: true,
+              })
+              if (ok) { await del.mutateAsync(item.id); onClose() }
             }} className="btn-danger"><Trash2 className="w-4 h-4" /></button>
           )}
           <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancelar</button>

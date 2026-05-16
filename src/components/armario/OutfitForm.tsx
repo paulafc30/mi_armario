@@ -3,6 +3,7 @@ import Modal from '@/components/shared/Modal'
 import { useClothes } from '@/hooks/useClothes'
 import { useCreateOutfit, useDeleteOutfit, useUpdateOutfit, OutfitWithItems } from '@/hooks/useOutfits'
 import { useAuth } from '@/hooks/useAuth'
+import { useConfirm } from '@/components/shared/ConfirmModal'
 import { Trash2, Check } from 'lucide-react'
 import { cx } from '@/lib/utils'
 
@@ -12,6 +13,7 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
   const create = useCreateOutfit()
   const update = useUpdateOutfit()
   const del = useDeleteOutfit()
+  const confirm = useConfirm()
 
   const [name, setName] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -47,7 +49,13 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
 
   async function handleDelete() {
     if (!outfit) return
-    if (!confirm('¿Eliminar outfit?')) return
+    const ok = await confirm({
+      title: 'Eliminar outfit',
+      message: `Vas a borrar el outfit "${outfit.name}". Las prendas que contiene no se eliminan, solo el outfit.`,
+      confirmText: 'Eliminar',
+      destructive: true,
+    })
+    if (!ok) return
     await del.mutateAsync(outfit.id)
     onClose()
   }

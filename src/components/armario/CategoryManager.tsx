@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import { useCategories, useCreateCategory, useDeleteCategory, useUpdateCategory } from '@/hooks/useCategories'
 import { useAuth } from '@/hooks/useAuth'
+import { useConfirm } from '@/components/shared/ConfirmModal'
 import { Pencil, Plus, Trash2, Check, X } from 'lucide-react'
 
 const COLORS = ['#dc3a2a', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#64748b']
@@ -12,6 +13,7 @@ export default function CategoryManager({ open, onClose }: { open: boolean; onCl
   const create = useCreateCategory()
   const update = useUpdateCategory()
   const del = useDeleteCategory()
+  const confirm = useConfirm()
 
   const [newName, setNewName] = useState('')
   const [newColor, setNewColor] = useState(COLORS[0])
@@ -72,8 +74,15 @@ export default function CategoryManager({ open, onClose }: { open: boolean; onCl
                     <span className="flex-1">{cat.name}</span>
                     <button onClick={() => { setEditingId(cat.id); setEditName(cat.name); setEditColor(cat.color) }}
                       className="p-2 hover:bg-surface-soft rounded-lg"><Pencil className="w-4 h-4 text-muted" /></button>
-                    <button onClick={async () => { if (confirm(`¿Eliminar "${cat.name}"?`)) await del.mutateAsync(cat.id) }}
-                      className="p-2 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4 text-red-600" /></button>
+                    <button onClick={async () => {
+                      const ok = await confirm({
+                        title: 'Eliminar categoría',
+                        message: `Vas a borrar la categoría "${cat.name}". Las prendas que la usen se quedarán sin categoría asignada.`,
+                        confirmText: 'Eliminar',
+                        destructive: true,
+                      })
+                      if (ok) await del.mutateAsync(cat.id)
+                    }} className="p-2 hover:bg-red-50 rounded-lg"><Trash2 className="w-4 h-4 text-red-600" /></button>
                   </>
                 )}
               </li>

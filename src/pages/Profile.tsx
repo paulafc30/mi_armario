@@ -6,6 +6,7 @@ import { useTheme, ThemeChoice } from '@/lib/theme'
 import { cx } from '@/lib/utils'
 import { uploadAvatar, deleteAvatar } from '@/lib/images'
 import { compressImage } from '@/lib/imageCompression'
+import { useConfirm } from '@/components/shared/ConfirmModal'
 import SettingsRow, { SettingsSection } from '@/components/profile/SettingsRow'
 import EditFieldModal from '@/components/profile/EditFieldModal'
 import ProfileHeader from '@/components/profile/ProfileHeader'
@@ -15,6 +16,7 @@ type Field = 'username' | 'email' | 'password' | null
 export default function Profile() {
   const { user } = useAuth()
   const [theme, setTheme] = useTheme()
+  const confirm = useConfirm()
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
@@ -69,7 +71,13 @@ export default function Profile() {
 
   async function handleAvatarRemove() {
     if (!user || !avatarPath) return
-    if (!confirm('¿Quitar tu foto de perfil?')) return
+    const ok = await confirm({
+      title: 'Quitar foto de perfil',
+      message: 'Volverás a la inicial coral por defecto. Puedes subir otra foto cuando quieras.',
+      confirmText: 'Quitar',
+      destructive: true,
+    })
+    if (!ok) return
     setUploadingAvatar(true)
     try {
       await deleteAvatar(avatarPath).catch(() => null)
@@ -109,7 +117,13 @@ export default function Profile() {
   }
 
   async function handleSignOut() {
-    if (!confirm('¿Cerrar sesión?')) return
+    const ok = await confirm({
+      title: 'Cerrar sesión',
+      message: 'Tendrás que volver a iniciar sesión para acceder a tu armario.',
+      confirmText: 'Cerrar sesión',
+      destructive: true,
+    })
+    if (!ok) return
     await supabase.auth.signOut()
   }
 
