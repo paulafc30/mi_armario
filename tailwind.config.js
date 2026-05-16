@@ -15,22 +15,21 @@ export default {
         'line-soft':    'rgb(var(--c-line-soft) / <alpha-value>)',
         'brand-soft':   'rgb(var(--c-brand-soft) / <alpha-value>)',
 
-        // Brand palette: coral cálido (tirando a rojo).
-        // Constante en ambos temas.
+        // Brand palette pivote en #FF5771 (coral rosado, no demasiado rosa).
         brand: {
-          50:  '#fff3f0',
-          100: '#ffe4dd',
-          200: '#ffc6b8',
-          300: '#ff9d8a',
-          400: '#ff7359',
-          500: '#f15041',   // primary
-          600: '#dc3a2a',
-          700: '#b82e20',
-          800: '#92271c',
-          900: '#75221a',
-          950: '#400d08',
+          50:  '#fff1f3',
+          100: '#ffe2e7',
+          200: '#ffc5cf',
+          300: '#ffa1b1',
+          400: '#ff7d92',
+          500: '#ff5771',  // primary
+          600: '#ef3a59',
+          700: '#c92847',
+          800: '#a31e3a',
+          900: '#831a31',
+          950: '#480d1b',
         },
-        base: '#fff7f4',
+        base: '#fff7f8',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -39,14 +38,14 @@ export default {
         '2xs': '0.6875rem',
       },
       boxShadow: {
-        soft: '0 1px 2px 0 rgba(15, 23, 42, 0.04), 0 4px 16px -8px rgba(241, 80, 65, 0.12)',
-        lift: '0 10px 30px -10px rgba(220, 58, 42, 0.28), 0 4px 12px -4px rgba(15, 23, 42, 0.06)',
-        glow: '0 0 0 4px rgba(241, 80, 65, 0.20)',
+        soft: '0 1px 2px 0 rgba(15, 23, 42, 0.04), 0 4px 16px -8px rgba(255, 87, 113, 0.14)',
+        lift: '0 10px 30px -10px rgba(239, 58, 89, 0.30), 0 4px 12px -4px rgba(15, 23, 42, 0.06)',
+        glow: '0 0 0 4px rgba(255, 87, 113, 0.22)',
       },
       backgroundImage: {
-        'brand-gradient': 'linear-gradient(135deg, #f15041 0%, #dc3a2a 100%)',
-        'brand-soft':     'linear-gradient(180deg, #fff3f0 0%, #ffffff 100%)',
-        'hero-glow':      'radial-gradient(60% 50% at 50% 0%, rgba(241,80,65,0.28) 0%, rgba(241,80,65,0) 100%)',
+        'brand-gradient': 'linear-gradient(135deg, #ff5771 0%, #ef3a59 100%)',
+        'brand-soft':     'linear-gradient(180deg, #fff1f3 0%, #ffffff 100%)',
+        'hero-glow':      'radial-gradient(60% 50% at 50% 0%, rgba(255,87,113,0.30) 0%, rgba(255,87,113,0) 100%)',
       },
       animation: {
         'fade-in':  'fadeIn 240ms ease-out',

@@ -13,27 +13,25 @@ const NAV = [
 export default function AppShell() {
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Glass header */}
-      <header className="sticky top-0 z-20 safe-top">
-        <div className="card-glass mx-2 mt-2 mb-3 rounded-2xl">
-          <div className="max-w-3xl mx-auto px-3 py-2.5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-gradient text-white shadow-lift shrink-0">
-              <Shirt className="w-5 h-5" />
-            </div>
-            <div className="flex-1">
-              <GlobalSearch />
-            </div>
+      {/* Header anclado al tope, sin margenes — la pestaña de la app termina en su borde inferior */}
+      <header className="sticky top-0 z-20 bg-surface/90 backdrop-blur-xl border-b border-line-soft safe-top">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-gradient text-white shadow-lift shrink-0">
+            <Shirt className="w-5 h-5" />
+          </div>
+          <div className="flex-1">
+            <GlobalSearch />
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-3xl w-full mx-auto pb-32">
+      <main className="flex-1 max-w-3xl w-full mx-auto pb-32 pt-3">
         <div className="animate-fade-in">
           <Outlet />
         </div>
       </main>
 
-      {/* Floating bottom nav */}
+      {/* Bottom nav: se mantiene flotante para mantener el aire visual del fondo */}
       <nav className="fixed bottom-3 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 safe-bottom">
         <div className="card-glass rounded-3xl px-2 py-1.5 mx-auto sm:w-auto">
           <div className="grid grid-cols-4 sm:flex sm:gap-1">

@@ -7,28 +7,28 @@
      Tokens semánticos (claro)
      ===================================================== */
   :root {
-    --c-page:          255 247 244;   /* fondo de página (warm)  */
+    --c-page:          255 247 248;   /* fondo (rosa muy sutil)  */
     --c-surface:       255 255 255;   /* tarjetas, formularios   */
-    --c-surface-soft:  250 245 243;   /* chips, separadores      */
+    --c-surface-soft:  250 245 247;   /* chips, separadores      */
     --c-ink:            15  23  42;   /* texto principal         */
     --c-muted:         100 116 139;   /* texto secundario        */
-    --c-line:          233 226 222;   /* bordes (cálido)         */
-    --c-line-soft:     246 240 237;   /* bordes muy suaves       */
-    --c-brand-soft:    255 243 240;   /* fondo coral muy suave   */
+    --c-line:          235 224 228;   /* bordes (rosado sutil)   */
+    --c-line-soft:     247 240 243;   /* bordes muy suaves       */
+    --c-brand-soft:    255 241 243;   /* fondo coral-rosa suave  */
   }
 
   /* =====================================================
      Tokens semánticos (oscuro)
      ===================================================== */
   .dark {
-    --c-page:           18  10   8;
-    --c-surface:        37  24  22;
-    --c-surface-soft:   29  19  17;
-    --c-ink:           250 240 235;
-    --c-muted:         170 158 150;
-    --c-line:           60  42  37;
-    --c-line-soft:      46  31  28;
-    --c-brand-soft:     65  21  13;
+    --c-page:           18  10  12;
+    --c-surface:        36  22  28;
+    --c-surface-soft:   28  18  22;
+    --c-ink:           250 240 242;
+    --c-muted:         170 158 162;
+    --c-line:           58  40  48;
+    --c-line-soft:      44  28  36;
+    --c-brand-soft:     65  21  31;
   }
 
   html, body, #root { height: 100%; }
@@ -40,14 +40,14 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: rgb(var(--c-page));
     background-image:
-      radial-gradient(80% 50% at 0% 0%, rgba(241, 80, 65, 0.10) 0%, transparent 60%),
-      radial-gradient(60% 40% at 100% 0%, rgba(255, 145, 90, 0.06) 0%, transparent 50%);
+      radial-gradient(80% 50% at 0% 0%, rgba(255, 87, 113, 0.10) 0%, transparent 60%),
+      radial-gradient(60% 40% at 100% 0%, rgba(255, 150, 130, 0.06) 0%, transparent 50%);
     background-attachment: fixed;
   }
   .dark body {
     background-image:
-      radial-gradient(80% 50% at 0% 0%, rgba(220, 58, 42, 0.22) 0%, transparent 60%),
-      radial-gradient(60% 40% at 100% 0%, rgba(255, 115, 89, 0.12) 0%, transparent 50%);
+      radial-gradient(80% 50% at 0% 0%, rgba(239, 58, 89, 0.22) 0%, transparent 60%),
+      radial-gradient(60% 40% at 100% 0%, rgba(255, 130, 110, 0.12) 0%, transparent 50%);
   }
 
   h1, h2, h3 { @apply tracking-tight; }
@@ -62,7 +62,7 @@
   }
   .btn-primary {
     @apply btn text-white shadow-soft hover:shadow-lift active:scale-[0.98];
-    background-image: linear-gradient(135deg, #f15041 0%, #dc3a2a 100%);
+    background-image: linear-gradient(135deg, #ff5771 0%, #ef3a59 100%);
   }
   .btn-primary:hover { filter: brightness(1.05); }
   .btn-secondary {
