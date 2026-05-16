@@ -13,8 +13,9 @@ const NAV = [
 export default function AppShell() {
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header anclado al tope, sin margenes — la pestaña de la app termina en su borde inferior */}
-      <header className="sticky top-0 z-20 bg-surface/90 backdrop-blur-xl border-b border-line-soft safe-top">
+      {/* Header anclado al tope. Usa el mismo color de fondo de la página
+          (con leve transparencia + blur) para que no se note como un corte. */}
+      <header className="sticky top-0 z-20 bg-page/75 backdrop-blur-xl safe-top">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-gradient text-white shadow-lift shrink-0">
             <Shirt className="w-5 h-5" />

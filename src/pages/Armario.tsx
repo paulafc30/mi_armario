@@ -109,22 +109,24 @@ export default function Armario() {
 
       {tab === 'prendas' && (
         <>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
             <button onClick={() => setFilterCat(null)}
-              className={cx('chip whitespace-nowrap font-medium border transition',
+              className={cx(
+                'chip whitespace-nowrap font-medium border-2 transition shrink-0',
                 filterCat === null
                   ? 'bg-brand-gradient text-white border-transparent shadow-soft'
-                  : 'bg-surface border-line text-muted hover:text-ink')}>
+                  : 'bg-surface border-line-soft text-muted hover:text-ink'
+              )}>
               Todas
             </button>
             {categories.map((c) => {
               const isActive = filterCat === c.id
               return (
                 <button key={c.id} onClick={() => setFilterCat(c.id === filterCat ? null : c.id)}
-                  className={cx('chip whitespace-nowrap font-medium gap-1.5 transition',
-                    isActive
-                      ? 'bg-surface text-ink border-2 shadow-soft'
-                      : 'bg-surface border border-line text-muted hover:text-ink')}
+                  className={cx(
+                    'chip whitespace-nowrap font-medium gap-1.5 transition shrink-0 border-2',
+                    isActive ? 'bg-surface text-ink shadow-soft' : 'bg-surface border-line-soft text-muted hover:text-ink'
+                  )}
                   style={isActive ? { borderColor: c.color } : undefined}>
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c.color }} />
                   {c.name}

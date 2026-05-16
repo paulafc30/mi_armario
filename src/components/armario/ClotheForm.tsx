@@ -11,8 +11,10 @@ import { uploadImage, deleteImage } from '@/lib/images'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { SIZE_OPTIONS, MATERIAL_OPTIONS } from '@/lib/options'
+import { fetchUrlPreview } from '@/lib/utils'
+import { isImageUrl } from '@/lib/sharedItem'
 import type { Clothe, ClothesStatus, ClotheImage } from '@/types/database'
-import { Sparkles, Trash2 } from 'lucide-react'
+import { Loader2, Sparkles, Trash2 } from 'lucide-react'
 
 export interface ClothePrefill {
   name?: string
@@ -54,6 +56,7 @@ export default function ClotheForm({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [descOpen, setDescOpen] = useState(false)
+  const [fetchingPreview, setFetchingPreview] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -83,8 +86,25 @@ export default function ClotheForm({
       setCategoryId(''); setBrand(''); setSize(''); setColor(null); setMaterial('')
       setTags(''); setNotes(prefill?.notes ?? ''); setPrice('')
       setOriginalImages([])
-      if (prefill?.url && /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(prefill.url)) {
-        setImages([{ kind: 'new-url', tempId: crypto.randomUUID(), url: prefill.url }])
+      const sharedUrl = prefill?.url ?? ''
+      if (sharedUrl && isImageUrl(sharedUrl)) {
+        // URL directa a una imagen — la usamos como primera foto
+        setImages([{ kind: 'new-url', tempId: crypto.randomUUID(), url: sharedUrl }])
+      } else if (sharedUrl) {
+        // URL de página de producto: pedimos el og:image vía microlink
+        setImages([])
+        setFetchingPreview(true)
+        fetchUrlPreview(sharedUrl)
+          .then((preview) => {
+            if (!preview) return
+            if (preview.image) {
+              setImages([{ kind: 'new-url', tempId: crypto.randomUUID(), url: preview.image }])
+            }
+            if (preview.title && !prefill?.name) {
+              setName(preview.title)
+            }
+          })
+          .finally(() => setFetchingPreview(false))
       } else {
         setImages([])
       }
@@ -193,6 +213,12 @@ export default function ClotheForm({
   return (
     <Modal open={open} onClose={onClose} title={clothe ? 'Editar prenda' : 'Nueva prenda'}>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {fetchingPreview && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-soft text-brand-700 text-xs">
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            Obteniendo imagen del enlace…
+          </div>
+        )}
         <MultiImagePicker images={images} onChange={setImages} />
 
         <div>

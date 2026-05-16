@@ -6,6 +6,7 @@ export default {
     extend: {
       colors: {
         // Semantic colors driven by CSS vars (auto-flip light/dark)
+        page:           'rgb(var(--c-page) / <alpha-value>)',
         surface:        'rgb(var(--c-surface) / <alpha-value>)',
         'surface-soft': 'rgb(var(--c-surface-soft) / <alpha-value>)',
         'surface-glass':'rgb(var(--c-surface) / 0.75)',
