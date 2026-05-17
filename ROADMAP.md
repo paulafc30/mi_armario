@@ -159,10 +159,14 @@ supabase/migrations/
 - Si la URL compartida parece una imagen, se usa directamente como primera foto de la prenda.
 - Se bumpó cache del SW a `mi-armario-v3` para forzar refresco del manifest.
 
-### 3.2 Tracker de días en venta
-- Indicador visual en cada prenda *En Venta*: "Llevas N días publicada".
-- Aviso si pasa de un umbral configurable (ej. 30 días) → sugerencia de bajar precio o retirar.
-- Necesita guardar la fecha en la que pasó a estado *en_venta*.
+### 3.2 Tracker de días en venta ✅
+- Migración `0008_listed_at.sql` añade columna `listed_at` a `clothes`.
+- `useChangeClothesStatus` sincroniza el timestamp:
+  - pasar a *en_venta* → `listed_at = now()`
+  - pasar a *baul/closet* → `listed_at = null`
+  - pasar a *vendida/archivada* → se conserva (historial)
+- Componente `DaysListedBadge` muestra "Publicada hoy/ayer/hace N días" en cada SaleCard en estado *en_venta*.
+- Si pasa de 30 días → cambia a fondo ámbar con icono de aviso (sugerencia visual de bajar precio o retirar).
 
 ### 3.3 Stats de ventas
 - Sección de dashboard: cuánto has ganado, cuánto invertiste, neto recuperado.
@@ -170,9 +174,12 @@ supabase/migrations/
 - Plataforma más eficaz (Wallapop vs Vinted).
 - Necesita: campo `purchase_price` opcional en `clothes`, fecha de venta ya guardada.
 
-### 3.4 Drag-reorder de fotos
-- En `MultiImagePicker`, permitir arrastrar las miniaturas para reordenar.
-- Hoy solo se puede promover una a portada con la estrella; un drag-drop daría flexibilidad total.
+### 3.4 Drag-reorder de fotos ✅
+- HTML5 drag-and-drop entre miniaturas en `MultiImagePicker`.
+- Convive con el drop de archivos externos: se diferencia inspeccionando `dataTransfer.types` (`'Files'` vs reorder interno).
+- Estados visuales: tile arrastrado al 40% opacity, tile destino con ring brand al hacer hover.
+- Indicador `GripVertical` aparece al hacer hover para sugerir que es arrastrable.
+- En móvil sigue funcionando el botón de estrella para promover a portada (HTML5 drag tiene poco soporte táctil).
 
 ### 3.5 Stats avanzadas del calendario
 - "Prenda no usada en los últimos X días" → sugerencia para mover a Baúl/Venta.

@@ -38,6 +38,7 @@ export interface Clothe {
   on_vinted: boolean
   price: number | null
   sold_at: string | null
+  listed_at: string | null
   brand: string | null
   size: string | null
   color: string | null

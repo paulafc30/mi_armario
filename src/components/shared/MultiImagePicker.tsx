@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2 } from 'lucide-react'
+import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical } from 'lucide-react'
 import { cx } from '@/lib/utils'
 import { compressImage } from '@/lib/imageCompression'
 
@@ -15,6 +15,10 @@ export function previewOf(img: PickerImage): string {
   return img.url
 }
 
+function keyOf(img: PickerImage): string {
+  return img.kind === 'existing' ? img.id : img.tempId
+}
+
 export default function MultiImagePicker({
   images,
   onChange,
@@ -22,11 +26,14 @@ export default function MultiImagePicker({
   images: PickerImage[]
   onChange: (next: PickerImage[]) => void
 }) {
-  const [dragging, setDragging] = useState(false)
+  const [filesDragging, setFilesDragging] = useState(false)
   const [urlMode, setUrlMode] = useState(false)
   const [urlValue, setUrlValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
+  // Drag-reorder interno entre miniaturas
+  const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   async function addFiles(files: FileList | File[]) {
@@ -73,8 +80,7 @@ export default function MultiImagePicker({
   }
 
   function removeAt(index: number) {
-    const next = images.filter((_, i) => i !== index)
-    onChange(next)
+    onChange(images.filter((_, i) => i !== index))
   }
 
   function setCover(index: number) {
@@ -85,50 +91,124 @@ export default function MultiImagePicker({
     onChange(next)
   }
 
-  function handleDrop(e: React.DragEvent) {
+  function reorder(fromIdx: number, toIdx: number) {
+    if (fromIdx === toIdx) return
+    const next = [...images]
+    const [moved] = next.splice(fromIdx, 1)
+    next.splice(toIdx, 0, moved)
+    onChange(next)
+  }
+
+  // --------- Drop de archivos externos en el grid ---------
+  function isFileDrag(e: React.DragEvent) {
+    return e.dataTransfer.types?.includes('Files')
+  }
+
+  function handleGridDragOver(e: React.DragEvent) {
+    if (!isFileDrag(e)) return
     e.preventDefault()
-    setDragging(false)
+    setFilesDragging(true)
+  }
+
+  function handleGridDragLeave(e: React.DragEvent) {
+    if (!isFileDrag(e)) return
+    e.preventDefault()
+    setFilesDragging(false)
+  }
+
+  function handleGridDrop(e: React.DragEvent) {
+    if (!isFileDrag(e)) return
+    e.preventDefault()
+    setFilesDragging(false)
     if (e.dataTransfer.files?.length) addFiles(e.dataTransfer.files)
+  }
+
+  // --------- Drag-reorder interno entre miniaturas ---------
+  function handleTileDragStart(e: React.DragEvent, i: number) {
+    e.dataTransfer.effectAllowed = 'move'
+    // Marcamos el payload como reorder interno (no son archivos)
+    e.dataTransfer.setData('text/x-mi-armario-reorder', String(i))
+    setDraggingIdx(i)
+  }
+
+  function handleTileDragOver(e: React.DragEvent, i: number) {
+    if (isFileDrag(e)) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (overIdx !== i) setOverIdx(i)
+  }
+
+  function handleTileDrop(e: React.DragEvent, i: number) {
+    if (isFileDrag(e)) return
+    e.preventDefault()
+    if (draggingIdx !== null) reorder(draggingIdx, i)
+    setDraggingIdx(null)
+    setOverIdx(null)
+  }
+
+  function handleTileDragEnd() {
+    setDraggingIdx(null)
+    setOverIdx(null)
   }
 
   return (
     <div className="space-y-3">
       <div
-        onDragEnter={(e) => { e.preventDefault(); setDragging(true) }}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
-        onDragLeave={(e) => { e.preventDefault(); setDragging(false) }}
-        onDrop={handleDrop}
+        onDragEnter={handleGridDragOver}
+        onDragOver={handleGridDragOver}
+        onDragLeave={handleGridDragLeave}
+        onDrop={handleGridDrop}
         className={cx(
           'grid grid-cols-3 gap-2 p-2 rounded-2xl transition border-2 border-dashed',
-          dragging ? 'border-brand-600 bg-brand-50' : 'border-transparent'
+          filesDragging ? 'border-brand-600 bg-brand-soft' : 'border-transparent'
         )}
       >
-        {images.map((img, i) => (
-          <div key={img.kind === 'existing' ? img.id : img.tempId}
-               className="relative aspect-square rounded-xl overflow-hidden bg-surface-soft group">
-            <img src={previewOf(img)} alt="" className="w-full h-full object-cover" />
+        {images.map((img, i) => {
+          const isDragging = draggingIdx === i
+          const isOver = overIdx === i && draggingIdx !== null && draggingIdx !== i
+          return (
+            <div
+              key={keyOf(img)}
+              draggable
+              onDragStart={(e) => handleTileDragStart(e, i)}
+              onDragOver={(e) => handleTileDragOver(e, i)}
+              onDrop={(e) => handleTileDrop(e, i)}
+              onDragEnd={handleTileDragEnd}
+              className={cx(
+                'relative aspect-square rounded-xl overflow-hidden bg-surface-soft group transition cursor-grab active:cursor-grabbing',
+                isDragging && 'opacity-40 scale-95',
+                isOver && 'ring-2 ring-brand-500 ring-offset-1 ring-offset-page'
+              )}
+            >
+              <img src={previewOf(img)} alt="" className="w-full h-full object-cover pointer-events-none" />
 
-            {/* Botón eliminar */}
-            <button type="button" onClick={() => removeAt(i)}
-              className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-80 hover:opacity-100 hover:bg-black/80 transition"
-              title="Quitar">
-              <X className="w-3.5 h-3.5" />
-            </button>
-
-            {/* Marcar como portada */}
-            {i === 0 ? (
-              <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-brand-700 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
-                <Star className="w-2.5 h-2.5 fill-white" /> Portada
+              {/* Indicador de arrastre (visible en hover) */}
+              <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition pointer-events-none flex items-end justify-center pb-0.5">
+                <GripVertical className="w-3.5 h-3.5 text-white/90 rotate-90" />
               </div>
-            ) : (
-              <button type="button" onClick={() => setCover(i)}
-                className="absolute top-1 left-1 p-1 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 hover:bg-black/70 transition"
-                title="Marcar como portada">
-                <Star className="w-3.5 h-3.5" />
+
+              {/* Botón eliminar */}
+              <button type="button" onClick={() => removeAt(i)}
+                className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-80 hover:opacity-100 hover:bg-black/80 transition"
+                title="Quitar">
+                <X className="w-3.5 h-3.5" />
               </button>
-            )}
-          </div>
-        ))}
+
+              {/* Marcar como portada */}
+              {i === 0 ? (
+                <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-brand-700 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                  <Star className="w-2.5 h-2.5 fill-white" /> Portada
+                </div>
+              ) : (
+                <button type="button" onClick={() => setCover(i)}
+                  className="absolute top-1 left-1 p-1 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 hover:bg-black/70 transition"
+                  title="Marcar como portada">
+                  <Star className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          )
+        })}
 
         {/* Tile para añadir */}
         <button
@@ -138,10 +218,10 @@ export default function MultiImagePicker({
           className={cx(
             'aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center transition',
             processing
-              ? 'border-brand-600 bg-brand-50 text-brand-700 cursor-wait'
-              : dragging
-                ? 'border-brand-600 bg-brand-50 text-brand-700'
-                : 'border-gray-300 bg-gray-50 text-muted hover:bg-surface-soft hover:border-gray-400'
+              ? 'border-brand-600 bg-brand-soft text-brand-700 cursor-wait'
+              : filesDragging
+                ? 'border-brand-600 bg-brand-soft text-brand-700'
+                : 'border-line bg-surface-soft text-muted hover:bg-surface hover:border-muted/40'
           )}
         >
           {processing ? (
@@ -153,7 +233,7 @@ export default function MultiImagePicker({
             <>
               <ImagePlus className="w-6 h-6 mb-0.5" />
               <span className="text-[11px] font-medium leading-tight text-center px-1">
-                {dragging ? '¡Suelta aquí!' : images.length === 0 ? 'Arrastra o pulsa' : 'Añadir'}
+                {filesDragging ? '¡Suelta aquí!' : images.length === 0 ? 'Arrastra o pulsa' : 'Añadir'}
               </span>
             </>
           )}
@@ -194,11 +274,11 @@ export default function MultiImagePicker({
         </button>
       )}
 
-      {error && <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2">{error}</p>}
+      {error && <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-200 rounded-lg px-3 py-2">{error}</p>}
 
       {images.length > 0 && (
         <p className="text-xs text-muted text-center">
-          La primera imagen es la portada. Toca la estrella para cambiarla.
+          La primera es la portada. Arrastra para reordenar o usa la estrella para cambiarla.
         </p>
       )}
     </div>

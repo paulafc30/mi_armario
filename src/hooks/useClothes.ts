@@ -63,14 +63,31 @@ export function useDeleteClothe() {
   })
 }
 
-/** Cambia el estado de una prenda. Si pasa a 'vendida' marca sold_at; si vuelve atrás lo limpia. */
+/**
+ * Cambia el estado de una prenda y sincroniza los timestamps:
+ *  - sold_at:  se rellena al pasar a 'vendida'; se limpia al volver a closet/baul/en_venta
+ *  - listed_at: se rellena al pasar a 'en_venta'; se limpia al volver a closet/baul;
+ *               se conserva al pasar a 'vendida' o 'archivada' (historial)
+ */
 export function useChangeClothesStatus() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: ClothesStatus }) => {
+      const now = new Date().toISOString()
       const patch: Partial<Clothe> = { status }
-      if (status === 'vendida') patch.sold_at = new Date().toISOString()
-      if (status === 'baul' || status === 'en_venta' || status === 'closet') patch.sold_at = null
+
+      if (status === 'vendida') {
+        patch.sold_at = now
+        // listed_at se conserva tal cual estuviera
+      } else if (status === 'en_venta') {
+        patch.listed_at = now
+        patch.sold_at = null
+      } else if (status === 'baul' || status === 'closet') {
+        patch.sold_at = null
+        patch.listed_at = null
+      }
+      // status === 'archivada' → ambos se conservan
+
       const { data, error } = await supabase.from('clothes').update(patch).eq('id', id).select().single()
       if (error) throw error
       return data

@@ -5,6 +5,7 @@ import { useChangeClothesStatus, useDeleteClothe, useUpdateClothe } from '@/hook
 import { useConfirm } from '@/components/shared/ConfirmModal'
 import { cx, formatPrice, formatDate } from '@/lib/utils'
 import DescriptionModal from './DescriptionModal'
+import DaysListedBadge from './DaysListedBadge'
 import { WallapopIcon, VintedIcon, WALLAPOP_COLOR, VINTED_COLOR } from './PlatformIcons'
 
 const NEXT: Record<ClothesStatus, ClothesStatus | null> = {
@@ -60,6 +61,11 @@ export default function SaleCard({ clothe, onEdit }: { clothe: Clothe; onEdit: (
               <span className="text-xs text-muted/70">{formatDate(clothe.sold_at)}</span>
             )}
           </div>
+          {clothe.status === 'en_venta' && clothe.listed_at && (
+            <div className="mt-1.5">
+              <DaysListedBadge listedAt={clothe.listed_at} />
+            </div>
+          )}
         </div>
       </button>
 
