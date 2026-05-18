@@ -101,7 +101,16 @@ supabase/migrations/
 - Sombras suaves con tinte coral.
 - Animaciones sutiles (fade-in, scale-in).
 
-### 1.7 Interacción y feedback
+### 1.7 Medidas corporales + fit check
+- **Migración `0009_measurements.sql`** añade a `profiles`: height_cm, bust_cm, waist_cm, hips_cm, shoulder_cm, weight_kg, top_size, bottom_size, shoe_size.
+- **`lib/bodyType.ts`** calcula la silueta a partir de pecho/cintura/cadera. 5 tipos: reloj de arena, pera, triángulo invertido, rectángulo, manzana. Cada uno con descripción y 3-4 tips de moda.
+- **`lib/sizeFit.ts`** tabla genérica europea XS-XXXL ↔ medidas en cm. Función `checkFit()` devuelve 5 verdicts: encaja / justa / holgada / pequeña / grande.
+- **`MeasurementsModal`** con inputs para las medidas y preview en vivo del tipo de silueta calculado mientras escribes.
+- **`BodyTypeCard`** en Perfil: muestra el tipo, descripción y tips o invita a hacer el test si aún no.
+- **Chip de fit en `ClotheDetail`**: cuando hay medidas + talla de la prenda, sale una franja en verde/ámbar/rojo con el veredicto.
+- **`useProfile` / `useUpdateProfile`** centralizan el acceso al perfil completo con cache via React Query.
+
+### 1.8 Interacción y feedback
 - **Modales de confirmación personalizados** (`src/components/shared/ConfirmModal.tsx`):
   - Sistema basado en promesas: `const confirm = useConfirm(); const ok = await confirm({ … })`.
   - `ConfirmProvider` montado en `main.tsx` envuelve toda la app.
@@ -111,7 +120,7 @@ supabase/migrations/
 - Toasts auto-desaparecibles (en perfil): operaciones rápidas con feedback no bloqueante.
 - Loading states en formularios y botones críticos.
 
-### 1.8 Infra y seguridad
+### 1.9 Infra y seguridad
 - Row Level Security en todas las tablas.
 - GRANTs explícitos (preparado para el cambio de Supabase del 30-oct-2026).
 - Bucket `clothes-images` con políticas por carpeta de usuario.

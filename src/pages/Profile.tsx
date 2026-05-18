@@ -1,15 +1,20 @@
 import { useEffect, useState } from 'react'
-import { LogOut, User, Mail, Lock, Sun, Moon, Monitor, Info, Sparkles, Trash2 } from 'lucide-react'
+import { LogOut, User, Mail, Lock, Sun, Moon, Monitor, Info, Sparkles, Trash2, Ruler } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
+import { useProfile, useUpdateProfile } from '@/hooks/useProfile'
 import { useTheme, ThemeChoice } from '@/lib/theme'
 import { cx } from '@/lib/utils'
 import { uploadAvatar, deleteAvatar } from '@/lib/images'
 import { compressImage } from '@/lib/imageCompression'
 import { useConfirm } from '@/components/shared/ConfirmModal'
+import { calculateBodyType } from '@/lib/bodyType'
 import SettingsRow, { SettingsSection } from '@/components/profile/SettingsRow'
 import EditFieldModal from '@/components/profile/EditFieldModal'
 import ProfileHeader from '@/components/profile/ProfileHeader'
+import MeasurementsModal from '@/components/profile/MeasurementsModal'
+import BodyTypeCard from '@/components/profile/BodyTypeCard'
+import type { Profile as ProfileType } from '@/types/database'
 
 type Field = 'username' | 'email' | 'password' | null
 
@@ -17,28 +22,35 @@ export default function Profile() {
   const { user } = useAuth()
   const [theme, setTheme] = useTheme()
   const confirm = useConfirm()
+  const { data: profile } = useProfile()
+  const updateProfile = useUpdateProfile()
+
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [avatarPath, setAvatarPath] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [editing, setEditing] = useState<Field>(null)
+  const [measurementsOpen, setMeasurementsOpen] = useState(false)
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
 
   useEffect(() => {
     if (!user) return
     setEmail(user.email ?? '')
-    supabase
-      .from('profiles')
-      .select('username, avatar_url, avatar_path')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
-        setUsername(data?.username ?? '')
-        setAvatarUrl(data?.avatar_url ?? null)
-        setAvatarPath(data?.avatar_path ?? null)
-      })
   }, [user])
+
+  useEffect(() => {
+    if (!profile) return
+    setUsername(profile.username ?? '')
+    setAvatarUrl(profile.avatar_url ?? null)
+    setAvatarPath(profile.avatar_path ?? null)
+  }, [profile])
+
+  const bodyType = calculateBodyType({
+    bust_cm: profile?.bust_cm ?? null,
+    waist_cm: profile?.waist_cm ?? null,
+    hips_cm: profile?.hips_cm ?? null,
+  })
 
   function showToast(kind: 'ok' | 'err', text: string) {
     setToast({ kind, text })
@@ -51,13 +63,7 @@ export default function Profile() {
     try {
       const compressed = await compressImage(file, { maxSize: 480, quality: 0.85 })
       const { url, path } = await uploadAvatar(compressed, user.id)
-      // Guardar nueva URL y path en profiles
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: url, avatar_path: path })
-        .eq('id', user.id)
-      if (error) throw error
-      // Borrar la foto antigua si existía
+      await updateProfile.mutateAsync({ avatar_url: url, avatar_path: path })
       if (avatarPath) await deleteAvatar(avatarPath).catch(() => null)
       setAvatarUrl(url)
       setAvatarPath(path)
@@ -81,11 +87,7 @@ export default function Profile() {
     setUploadingAvatar(true)
     try {
       await deleteAvatar(avatarPath).catch(() => null)
-      const { error } = await supabase
-        .from('profiles')
-        .update({ avatar_url: null, avatar_path: null })
-        .eq('id', user.id)
-      if (error) throw error
+      await updateProfile.mutateAsync({ avatar_url: null, avatar_path: null })
       setAvatarUrl(null)
       setAvatarPath(null)
       showToast('ok', 'Foto eliminada')
@@ -98,10 +100,13 @@ export default function Profile() {
 
   async function saveUsername(value: string) {
     if (!user) return { error: 'Sin sesión' }
-    const { error } = await supabase.from('profiles').update({ username: value }).eq('id', user.id)
-    if (error) return { error: error.message }
-    setUsername(value)
-    showToast('ok', 'Nombre actualizado')
+    try {
+      await updateProfile.mutateAsync({ username: value })
+      setUsername(value)
+      showToast('ok', 'Nombre actualizado')
+    } catch (err: any) {
+      return { error: err?.message ?? 'Error al guardar' }
+    }
   }
 
   async function saveEmail(value: string) {
@@ -114,6 +119,15 @@ export default function Profile() {
     const { error } = await supabase.auth.updateUser({ password: value })
     if (error) return { error: error.message }
     showToast('ok', 'Contraseña actualizada')
+  }
+
+  async function saveMeasurements(patch: Partial<ProfileType>) {
+    try {
+      await updateProfile.mutateAsync(patch)
+      showToast('ok', 'Medidas guardadas')
+    } catch (err: any) {
+      return { error: err?.message ?? 'Error al guardar medidas' }
+    }
   }
 
   async function handleSignOut() {
@@ -146,10 +160,15 @@ export default function Profile() {
         )}>{toast.text}</div>
       )}
 
+      <SettingsSection title="Tu cuerpo">
+        <BodyTypeCard bodyType={bodyType} onEdit={() => setMeasurementsOpen(true)} />
+      </SettingsSection>
+
       <SettingsSection title="Cuenta">
-        <SettingsRow icon={User} label="Nombre"     value={username || 'Sin nombre'} onClick={() => setEditing('username')} />
-        <SettingsRow icon={Mail} label="Email"      value={email}                    onClick={() => setEditing('email')} />
-        <SettingsRow icon={Lock} label="Contraseña" value="••••••••"                  onClick={() => setEditing('password')} />
+        <SettingsRow icon={User}  label="Nombre"     value={username || 'Sin nombre'} onClick={() => setEditing('username')} />
+        <SettingsRow icon={Mail}  label="Email"      value={email}                    onClick={() => setEditing('email')} />
+        <SettingsRow icon={Lock}  label="Contraseña" value="••••••••"                  onClick={() => setEditing('password')} />
+        <SettingsRow icon={Ruler} label="Medidas y tallas" value={profile?.bust_cm ? 'Configuradas' : 'Sin configurar'} onClick={() => setMeasurementsOpen(true)} />
         {avatarUrl && (
           <SettingsRow icon={Trash2} iconAccent="rose" label="Quitar foto de perfil" onClick={handleAvatarRemove} chevron={false} />
         )}
@@ -201,6 +220,12 @@ export default function Profile() {
         placeholder="Mínimo 6 caracteres"
         minLength={6}
         onSave={savePassword}
+      />
+      <MeasurementsModal
+        open={measurementsOpen}
+        onClose={() => setMeasurementsOpen(false)}
+        initial={profile ?? null}
+        onSave={saveMeasurements}
       />
     </div>
   )

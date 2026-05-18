@@ -2,11 +2,14 @@ import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import ImageCarousel from '@/components/shared/ImageCarousel'
 import { useChangeClothesStatus } from '@/hooks/useClothes'
+import { useProfile } from '@/hooks/useProfile'
 import { colorHexByName } from '@/components/shared/ColorPicker'
 import { useConfirm } from '@/components/shared/ConfirmModal'
 import { supabase } from '@/lib/supabase'
+import { checkFit, FIT_META } from '@/lib/sizeFit'
+import { cx } from '@/lib/utils'
 import type { Clothe } from '@/types/database'
-import { Pencil, Tag } from 'lucide-react'
+import { Pencil, Tag, Ruler } from 'lucide-react'
 
 export default function ClotheDetail({
   open,
@@ -21,7 +24,15 @@ export default function ClotheDetail({
 }) {
   const changeStatus = useChangeClothesStatus()
   const confirm = useConfirm()
+  const { data: profile } = useProfile()
   const [galleryUrls, setGalleryUrls] = useState<string[]>([])
+
+  const fitVerdict = clothe ? checkFit(clothe.size, {
+    bust_cm: profile?.bust_cm ?? null,
+    waist_cm: profile?.waist_cm ?? null,
+    hips_cm: profile?.hips_cm ?? null,
+  }) : 'unknown'
+  const showFit = fitVerdict !== 'unknown'
 
   useEffect(() => {
     if (!open || !clothe) return
@@ -83,6 +94,13 @@ export default function ClotheDetail({
             {clothe.tags.map((t) => (
               <span key={t} className="chip bg-surface-soft text-ink/80"><Tag className="w-3 h-3" />{t}</span>
             ))}
+          </div>
+        )}
+
+        {showFit && (
+          <div className={cx('rounded-xl px-3 py-2.5 flex items-center gap-2 text-sm', FIT_META[fitVerdict].className)}>
+            <Ruler className="w-4 h-4 shrink-0" />
+            <span><span className="font-semibold">Según tus medidas:</span> {FIT_META[fitVerdict].label}</span>
           </div>
         )}
 

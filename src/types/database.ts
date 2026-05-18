@@ -12,6 +12,17 @@ export interface Profile {
   id: string
   username: string | null
   avatar_url: string | null
+  avatar_path: string | null
+  // Medidas (todas opcionales)
+  height_cm: number | null
+  bust_cm: number | null
+  waist_cm: number | null
+  hips_cm: number | null
+  shoulder_cm: number | null
+  weight_kg: number | null
+  top_size: string | null
+  bottom_size: string | null
+  shoe_size: string | null
   created_at: string
   updated_at: string
 }
