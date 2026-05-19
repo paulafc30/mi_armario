@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Modal from '@/components/shared/Modal'
-import MultiImagePicker, { PickerImage } from '@/components/shared/MultiImagePicker'
-import ColorPicker from '@/components/shared/ColorPicker'
+import MultiImagePicker, { PickerImage, previewOf } from '@/components/shared/MultiImagePicker'
+import ColorPicker, { colorHexByName } from '@/components/shared/ColorPicker'
 import Combobox from '@/components/shared/Combobox'
 import DescriptionModal from '@/components/venta/DescriptionModal'
 import { useCategories } from '@/hooks/useCategories'
@@ -14,8 +14,9 @@ import { SIZE_OPTIONS, MATERIAL_OPTIONS } from '@/lib/options'
 import { fetchUrlPreview } from '@/lib/utils'
 import { isImageUrl } from '@/lib/sharedItem'
 import { useConfirm } from '@/components/shared/ConfirmModal'
+import { extractDominantColorName } from '@/lib/colorExtraction'
 import type { Clothe, ClothesStatus, ClotheImage } from '@/types/database'
-import { Loader2, Sparkles, Trash2 } from 'lucide-react'
+import { Loader2, Sparkles, Trash2, Wand2, X } from 'lucide-react'
 
 export interface ClothePrefill {
   name?: string
@@ -59,6 +60,8 @@ export default function ClotheForm({
   const [error, setError] = useState<string | null>(null)
   const [descOpen, setDescOpen] = useState(false)
   const [fetchingPreview, setFetchingPreview] = useState(false)
+  const [suggestedColor, setSuggestedColor] = useState<string | null>(null)
+  const [suggestionDismissed, setSuggestionDismissed] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -112,7 +115,25 @@ export default function ClotheForm({
       }
     }
     setError(null)
+    setSuggestedColor(null)
+    setSuggestionDismissed(false)
   }, [open, clothe, prefill])
+
+  // Detectar color dominante de la primera imagen (la portada) y sugerirlo
+  // si la usuaria aún no ha elegido color manualmente.
+  useEffect(() => {
+    if (!open) return
+    if (color) { setSuggestedColor(null); return }
+    if (images.length === 0) { setSuggestedColor(null); return }
+    const first = images[0]
+    const src = previewOf(first)
+    if (!src) return
+    let cancelled = false
+    extractDominantColorName(src).then((name) => {
+      if (!cancelled) setSuggestedColor(name)
+    })
+    return () => { cancelled = true }
+  }, [open, images, color])
 
   /** Construye una prenda "virtual" con los valores actuales del formulario,
    *  para que el modal de descripción pueda generarse sin guardar todavía. */
@@ -264,6 +285,39 @@ export default function ClotheForm({
         <div>
           <label className="label">Color</label>
           <ColorPicker value={color} onChange={setColor} />
+          {suggestedColor && !color && !suggestionDismissed && (
+            <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-soft text-brand-700 dark:text-brand-200 text-xs animate-fade-in">
+              <Wand2 className="w-3.5 h-3.5 shrink-0" />
+              <span className="flex-1">
+                Tu foto parece{' '}
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full align-middle mx-0.5 border border-line"
+                  style={{
+                    background:
+                      colorHexByName(suggestedColor) === 'multicolor'
+                        ? 'conic-gradient(from 0deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ec4899, #ef4444)'
+                        : colorHexByName(suggestedColor) ?? '#999',
+                  }}
+                />
+                <strong className="ml-0.5">{suggestedColor}</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => { setColor(suggestedColor); setSuggestionDismissed(true) }}
+                className="font-semibold underline shrink-0"
+              >
+                Usar
+              </button>
+              <button
+                type="button"
+                onClick={() => setSuggestionDismissed(true)}
+                className="p-0.5 rounded hover:bg-brand-100 dark:hover:bg-brand-500/10 shrink-0"
+                aria-label="Cerrar sugerencia"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
         </div>
 
         <div>

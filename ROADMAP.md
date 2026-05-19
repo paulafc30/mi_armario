@@ -229,9 +229,18 @@ supabase/migrations/
 - Botón en Perfil → genera CSV/JSON con todas las prendas, outfits, wears.
 - Útil para backup personal o migración.
 
-### 4.5 Reconocimiento automático de color
-- Al subir foto, extraer color dominante con `Vibrant.js` o canvas.
-- Sugerirlo como color de la prenda (modificable).
+### 4.5 Reconocimiento automático de color ✅
+- **`lib/colorExtraction.ts`** sin dependencias externas:
+  - Dibuja la imagen en un canvas 64×64.
+  - Considera solo el rectángulo central (60%) para evitar fondos/marcos.
+  - Bucketea píxeles en 8×8×8 cubos RGB, ignora cuasi-blancos y cuasi-negros (fondos).
+  - Coge el bucket más poblado y promedia → color dominante.
+  - Mapea al color más cercano de la paleta `CLOTHING_COLORS` usando distancia redmean (aproximación perceptual barata sin LAB).
+- **Sugerencia inline en `ClotheForm`**: cuando se añade/cambia la primera imagen y la usuaria no ha elegido color manualmente, sale un banner coral debajo del ColorPicker tipo *"Tu foto parece ● Verde — Usar"*.
+  - Botón "Usar" rellena automáticamente.
+  - Botón X la descarta sin aplicar.
+  - Si la usuaria ya pickeó un color a mano, no aparece.
+- Maneja silenciosamente errores de CORS, canvas tainting, imágenes vacías, etc.
 
 ### 4.6 Múltiples wishlist
 - Carpetas dentro de la wishlist ("verano", "regalos", "rebajas enero").
