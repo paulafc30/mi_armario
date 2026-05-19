@@ -209,10 +209,17 @@ supabase/migrations/
 - Rellena automáticamente el formulario al añadir prenda.
 - Aplazado mientras no haya presupuesto recurrente.
 
-### 4.2 Compartir outfit como imagen
-- Generar un collage 2x2 o 3x3 con las prendas de un outfit.
-- Botón "Compartir" → genera PNG → abre share del sistema.
-- Útil para mandar a una amiga "¿qué te parece este look?".
+### 4.2 Compartir outfit como imagen ✅
+- **`lib/outfitCollage.ts`** dibuja un PNG 1080×1080 en canvas client-side:
+  - Grid automático según número de prendas (1→1×1, 2→2×1, 3→3×1, 4→2×2, 5-6→3×2, 7-9→3×3, cap a 9).
+  - Esquinas redondeadas (28px), object-fit cover, gap de 14px entre celdas.
+  - Título del outfit en negrita Inter 44px en la parte superior.
+  - Fondo crema-rosa que case con la paleta.
+  - `crossorigin="anonymous"` para evitar canvas tainting; placeholder si una imagen falla.
+- **`shareOrDownloadBlob`** intenta `navigator.share({ files })` y cae a descarga si no está soportado o el usuario cancela.
+- **`ShareOutfitModal`** muestra el preview generado y dos botones (Descargar / Compartir).
+- Acceso desde `OutfitForm` con botón "Compartir como imagen" en la cabecera de la sección Prendas, deshabilitado hasta tener nombre + al menos una prenda.
+- Funciona sin guardar el outfit: usa los datos actuales del formulario, así puedes compartir antes de confirmar.
 
 ### 4.3 Notificaciones push
 - Recordatorios programados ("¿qué llevaste hoy?", "revisa tu armario").

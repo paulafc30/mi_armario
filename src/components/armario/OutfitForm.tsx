@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
+import ShareOutfitModal from './ShareOutfitModal'
 import { useClothes } from '@/hooks/useClothes'
 import { useCreateOutfit, useDeleteOutfit, useUpdateOutfit, OutfitWithItems } from '@/hooks/useOutfits'
 import { useAuth } from '@/hooks/useAuth'
 import { useConfirm } from '@/components/shared/ConfirmModal'
-import { Trash2, Check } from 'lucide-react'
+import { Trash2, Check, Share2 } from 'lucide-react'
 import { cx } from '@/lib/utils'
 
 export default function OutfitForm({ open, onClose, outfit }: { open: boolean; onClose: () => void; outfit?: OutfitWithItems | null }) {
@@ -18,6 +19,7 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
   const [name, setName] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [submitting, setSubmitting] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
 
   useEffect(() => {
     if (!open) return
@@ -60,6 +62,8 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
     onClose()
   }
 
+  const canShare = selected.size > 0 && name.trim().length > 0
+
   return (
     <Modal open={open} onClose={onClose} title={outfit ? 'Editar outfit' : 'Nuevo outfit'}>
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -69,7 +73,18 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
         </div>
 
         <div>
-          <label className="label">Prendas</label>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="label mb-0">Prendas</span>
+            <button
+              type="button"
+              disabled={!canShare}
+              onClick={() => setShareOpen(true)}
+              className="text-xs font-semibold text-brand-700 hover:text-brand-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+              title={canShare ? 'Generar imagen del outfit' : 'Selecciona al menos una prenda y dale nombre'}
+            >
+              <Share2 className="w-3.5 h-3.5" /> Compartir como imagen
+            </button>
+          </div>
           <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto">
             {closet.map((c) => {
               const isSelected = selected.has(c.id)
@@ -91,6 +106,11 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
             })}
           </div>
           {closet.length === 0 && <p className="text-sm text-muted">No hay prendas en tu armario aún.</p>}
+          {selected.size > 9 && (
+            <p className="text-xs text-amber-700 mt-1.5">
+              En la imagen compartida solo entran las primeras 9 prendas.
+            </p>
+          )}
         </div>
 
         <div className="flex gap-2 pt-2">
@@ -99,6 +119,13 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
           <button type="submit" disabled={submitting} className="btn-primary flex-1">{submitting ? 'Guardando…' : 'Guardar'}</button>
         </div>
       </form>
+
+      <ShareOutfitModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        outfitName={name}
+        clotheIds={[...selected]}
+      />
     </Modal>
   )
 }
