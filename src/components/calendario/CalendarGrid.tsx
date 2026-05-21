@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react'
 import { cx } from '@/lib/utils'
 import { MonthDay, WEEKDAY_LABELS, monthLabel } from '@/lib/calendar'
 import { WearWithRefs } from '@/hooks/useWears'
@@ -40,6 +40,8 @@ export default function CalendarGrid({
 
         {days.map((d) => {
           const wears = wearsByDate.get(d.iso) ?? []
+          const hasPlanned = wears.some((w) => w.planned)
+          const allPlanned = wears.length > 0 && wears.every((w) => w.planned)
           const previews = wears
             .map((w) => w.clothes?.image_url ?? w.outfits?.cover_image_url)
             .filter(Boolean) as string[]
@@ -57,8 +59,13 @@ export default function CalendarGrid({
               <span className={cx('text-[11px] font-medium leading-none', d.isToday && 'text-brand-700')}>
                 {d.date.getDate()}
               </span>
+
+              {hasPlanned && (
+                <Clock className="absolute top-1 right-1 w-2.5 h-2.5 text-brand-600" />
+              )}
+
               {previews.length > 0 && (
-                <div className="flex-1 flex items-end gap-0.5 mt-1">
+                <div className={cx('flex-1 flex items-end gap-0.5 mt-1', allPlanned && 'opacity-70')}>
                   {previews.slice(0, 2).map((src, i) => (
                     <img key={i} src={src} alt=""
                       className="w-full h-4 sm:h-5 object-cover rounded-sm" />

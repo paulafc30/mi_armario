@@ -90,6 +90,8 @@ export interface Wear {
   outfit_id: string | null
   wear_date: string // YYYY-MM-DD
   notes: string | null
+  /** true = planeado a futuro (recordatorio). false = ya llevado / histórico. */
+  planned: boolean
   created_at: string
 }
 

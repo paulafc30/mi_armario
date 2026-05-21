@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { formatISODate } from '@/lib/calendar'
 import type { Wear } from '@/types/database'
 
 export interface WearWithRefs extends Wear {
@@ -24,6 +25,26 @@ export function useWearsInRange(startISO: string, endISO: string) {
   })
 }
 
+/** Wears que están planeados para HOY (recordatorio del día). */
+export function useTodayPlannedWears() {
+  const today = formatISODate(new Date())
+  return useQuery({
+    queryKey: ['wears', 'today-planned', today],
+    queryFn: async (): Promise<WearWithRefs[]> => {
+      const { data, error } = await supabase
+        .from('wears')
+        .select('*, clothes(id, name, image_url), outfits(id, name, cover_image_url)')
+        .eq('wear_date', today)
+        .eq('planned', true)
+        .order('created_at', { ascending: true })
+      if (error) throw error
+      return (data ?? []) as WearWithRefs[]
+    },
+    // Refrescar al volver a la pestaña — útil si pasa medianoche
+    refetchOnWindowFocus: true,
+  })
+}
+
 export function useCreateWear() {
   const qc = useQueryClient()
   return useMutation({
@@ -33,7 +54,10 @@ export function useCreateWear() {
       clothe_id?: string | null
       outfit_id?: string | null
       notes?: string | null
+      planned?: boolean
     }) => {
+      // Por defecto: planeado si la fecha es hoy o futura, histórico si es pasada
+      const auto = input.wear_date >= formatISODate(new Date())
       const { data, error } = await supabase
         .from('wears')
         .insert({
@@ -42,7 +66,25 @@ export function useCreateWear() {
           clothe_id: input.clothe_id ?? null,
           outfit_id: input.outfit_id ?? null,
           notes: input.notes ?? null,
+          planned: input.planned ?? auto,
         })
+        .select()
+        .single()
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['wears'] }),
+  })
+}
+
+export function useUpdateWear() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, ...patch }: Partial<Wear> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('wears')
+        .update(patch)
+        .eq('id', id)
         .select()
         .single()
       if (error) throw error

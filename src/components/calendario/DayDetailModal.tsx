@@ -2,11 +2,15 @@ import { useMemo, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import { useClothes } from '@/hooks/useClothes'
 import { useOutfits } from '@/hooks/useOutfits'
-import { useCreateWear, useDeleteWear, WearWithRefs } from '@/hooks/useWears'
+import { useCreateWear, useDeleteWear, useUpdateWear, WearWithRefs } from '@/hooks/useWears'
 import { useAuth } from '@/hooks/useAuth'
-import { longDateLabel } from '@/lib/calendar'
+import { formatISODate, longDateLabel } from '@/lib/calendar'
 import { cx } from '@/lib/utils'
-import { Shirt, Folder, Trash2, Plus, ImageOff, X } from 'lucide-react'
+import { Shirt, Folder, Trash2, Plus, ImageOff, X, Clock, Check } from 'lucide-react'
+
+function formatISODateToday(): string {
+  return formatISODate(new Date())
+}
 
 type AddMode = null | 'clothe' | 'outfit'
 
@@ -26,6 +30,7 @@ export default function DayDetailModal({
   const { data: outfits = [] } = useOutfits()
   const createWear = useCreateWear()
   const deleteWear = useDeleteWear()
+  const updateWear = useUpdateWear()
 
   const [addMode, setAddMode] = useState<AddMode>(null)
   const [search, setSearch] = useState('')
@@ -74,7 +79,10 @@ export default function DayDetailModal({
               const name = w.clothes?.name ?? w.outfits?.name ?? 'Sin nombre'
               const img = w.clothes?.image_url ?? w.outfits?.cover_image_url
               return (
-                <li key={w.id} className="flex items-center gap-3 p-2 rounded-xl bg-surface-soft">
+                <li key={w.id} className={cx(
+                  'flex items-center gap-3 p-2 rounded-xl',
+                  w.planned ? 'bg-brand-soft border border-dashed border-brand-300 dark:border-brand-500/40' : 'bg-surface-soft'
+                )}>
                   <div className="w-12 h-12 rounded-lg bg-surface-soft overflow-hidden flex-shrink-0">
                     {img ? (
                       <img src={img} alt="" className="w-full h-full object-cover" />
@@ -86,10 +94,24 @@ export default function DayDetailModal({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{name}</p>
-                    <span className={cx('chip text-[10px] mt-0.5', isOutfit ? 'bg-amber-100 text-amber-800' : 'bg-brand-100 text-brand-800')}>
-                      {isOutfit ? <><Folder className="w-2.5 h-2.5" /> Outfit</> : <><Shirt className="w-2.5 h-2.5" /> Prenda</>}
-                    </span>
+                    <div className="flex gap-1 mt-0.5 flex-wrap">
+                      <span className={cx('chip text-[10px]', isOutfit ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-200' : 'bg-brand-100 text-brand-800 dark:bg-brand-500/20 dark:text-brand-200')}>
+                        {isOutfit ? <><Folder className="w-2.5 h-2.5" /> Outfit</> : <><Shirt className="w-2.5 h-2.5" /> Prenda</>}
+                      </span>
+                      {w.planned && (
+                        <span className="chip text-[10px] bg-brand-gradient text-white">
+                          <Clock className="w-2.5 h-2.5" /> Planeado
+                        </span>
+                      )}
+                    </div>
                   </div>
+                  {w.planned && (
+                    <button onClick={() => updateWear.mutate({ id: w.id, planned: false })}
+                      className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100"
+                      title="Marcar como llevado">
+                      <Check className="w-4 h-4" />
+                    </button>
+                  )}
                   <button onClick={() => deleteWear.mutate(w.id)}
                     className="p-2 rounded-lg hover:bg-red-50 text-red-600">
                     <Trash2 className="w-4 h-4" />
@@ -101,14 +123,21 @@ export default function DayDetailModal({
         )}
 
         {addMode === null && (
-          <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => setAddMode('clothe')} className="btn-secondary">
-              <Shirt className="w-4 h-4" /> Añadir prenda
-            </button>
-            <button onClick={() => setAddMode('outfit')} className="btn-secondary">
-              <Folder className="w-4 h-4" /> Añadir outfit
-            </button>
-          </div>
+          <>
+            {iso && iso >= formatISODateToday() && (
+              <p className="text-xs text-muted text-center -mt-2 flex items-center justify-center gap-1">
+                <Clock className="w-3 h-3" /> Lo que añadas se guardará como <strong>planeado</strong>.
+              </p>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setAddMode('clothe')} className="btn-secondary">
+                <Shirt className="w-4 h-4" /> Añadir prenda
+              </button>
+              <button onClick={() => setAddMode('outfit')} className="btn-secondary">
+                <Folder className="w-4 h-4" /> Añadir outfit
+              </button>
+            </div>
+          </>
         )}
 
         {addMode !== null && (

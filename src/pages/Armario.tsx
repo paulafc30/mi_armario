@@ -3,6 +3,7 @@ import { consumeSharedPayload } from '@/lib/sharedItem'
 import type { ClothePrefill } from '@/components/armario/ClotheForm'
 import { Plus, Settings2, Folder, Calendar as CalendarIcon, Shirt } from 'lucide-react'
 import EmptyState from '@/components/shared/EmptyState'
+import PlannedTodayBanner from '@/components/armario/PlannedTodayBanner'
 import { useClothes } from '@/hooks/useClothes'
 import { useCategories } from '@/hooks/useCategories'
 import { useOutfits, OutfitWithItems } from '@/hooks/useOutfits'
@@ -73,6 +74,7 @@ export default function Armario() {
 
   return (
     <div className="px-4 pb-4 space-y-5">
+      <PlannedTodayBanner />
       <div className="flex items-end justify-between gap-3">
         <div>
           <h1 className="heading-xl">Mi Armario</h1>
