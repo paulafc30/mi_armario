@@ -97,10 +97,28 @@ function formatEUR(p: number): string {
   return p.toFixed(2).replace(/\.00$/, '').replace('.', ',')
 }
 
+/** Junta una lista de colores con la conjunción adecuada: "blanco", "blanco y negro", "blanco, negro y gris". */
+function colorsToText(colors: string[]): string {
+  if (colors.length === 0) return ''
+  const lc = colors.map((c) => c.toLowerCase())
+  if (lc.length === 1) return lc[0]
+  if (lc.length === 2) return `${lc[0]} y ${lc[1]}`
+  return `${lc.slice(0, -1).join(', ')} y ${lc[lc.length - 1]}`
+}
+
+/** Devuelve los colores de la prenda (manejando legacy `color` por backward compat). */
+function getColors(clothe: Clothe): string[] {
+  if (clothe.colors && clothe.colors.length > 0) return clothe.colors
+  if (clothe.color) return [clothe.color]
+  return []
+}
+
 function buildDetails(clothe: Clothe): string {
   const parts: string[] = [clothe.name.toLowerCase()]
-  if (clothe.color && !colorAlreadyInName(clothe.name, clothe.color)) {
-    parts.push(`en ${clothe.color.toLowerCase()}`)
+  const allColors = getColors(clothe)
+  const visibleColors = allColors.filter((c) => !colorAlreadyInName(clothe.name, c))
+  if (visibleColors.length > 0) {
+    parts.push(`en ${colorsToText(visibleColors)}`)
   }
   if (clothe.brand) parts.push(`de ${clothe.brand}`)
   if (clothe.size) parts.push(`talla ${clothe.size}`)
@@ -189,14 +207,15 @@ export function generateShortDescription(clothe: Clothe, category?: Category): s
   const header: string[] = [clothe.name]
   if (clothe.brand) header.push(clothe.brand)
   if (clothe.size) header.push(`Talla ${clothe.size}`)
-  if (clothe.color && !colorAlreadyInName(clothe.name, clothe.color)) header.push(clothe.color)
+  const visibleColors = getColors(clothe).filter((c) => !colorAlreadyInName(clothe.name, c))
+  if (visibleColors.length > 0) header.push(visibleColors.join(' / '))
 
   const body = clothe.notes?.trim() || pick(CONDITIONS[form])
 
   const tags = new Set<string>()
   if (clothe.brand) tags.add(`#${slug(clothe.brand)}`)
   if (category) tags.add(`#${slug(category.name)}`)
-  if (clothe.color) tags.add(`#${slug(clothe.color)}`)
+  for (const c of getColors(clothe)) tags.add(`#${slug(c)}`)
   if (clothe.size) tags.add(`#talla${slug(clothe.size)}`)
   tags.add('#segundamano'); tags.add('#ropa')
 

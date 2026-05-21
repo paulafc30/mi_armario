@@ -57,10 +57,11 @@ export default function Armario() {
       if (filterCat && c.category_id !== filterCat) return false
       if (!q) return true
       const cat = categories.find((cc) => cc.id === c.category_id)
+      const allColors = c.colors && c.colors.length > 0 ? c.colors : (c.color ? [c.color] : [])
       return (
         c.name.toLowerCase().includes(q) ||
         (c.brand?.toLowerCase().includes(q) ?? false) ||
-        (c.color?.toLowerCase().includes(q) ?? false) ||
+        allColors.some((col) => col.toLowerCase().includes(q)) ||
         (c.size?.toLowerCase().includes(q) ?? false) ||
         c.tags.some((t) => t.toLowerCase().includes(q)) ||
         (cat?.name.toLowerCase().includes(q) ?? false)

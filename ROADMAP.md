@@ -101,7 +101,22 @@ supabase/migrations/
 - Sombras suaves con tinte coral.
 - Animaciones sutiles (fade-in, scale-in).
 
-### 1.7 Medidas corporales + fit check
+### 1.7 Multi-color por prenda (hasta 3)
+- Migración `0011_multi_color.sql` añade columna `colors text[]` y hace backfill desde el antiguo `color`.
+- Type `Clothe.colors: string[]`; `color` queda como deprecated por backward compat.
+- `ColorPicker` reescrito como **multi-select** con prop `max` (default 3): muestra un ✓ en cada color elegido, hace ring brand alrededor, deshabilita el resto cuando se alcanza el límite y muestra contador "X / 3".
+- `ClotheForm` mantiene state como `colors[]`, alimenta también el campo legacy `color` con el primero para que nada se rompa.
+- `ClotheDetail` itera los colores y pinta un chip por cada uno con su dot.
+- `lib/description.ts` junta los colores con conjunción natural:
+  - 1 color: "en blanco"
+  - 2: "en blanco y negro"
+  - 3: "en blanco, negro y gris"
+- Filtra los colores ya presentes en el nombre (sigue evitando "camiseta blanca en blanco").
+- Hashtags Vinted: uno por color (#blanco #negro #gris).
+- Búsqueda global en Armario y Venta busca dentro del array de colores además del legacy.
+- Tests actualizados con 2 casos extra (dos colores con "y", tres con comas y "y" final).
+
+### 1.8 Medidas corporales + fit check
 - **Migración `0009_measurements.sql`** añade a `profiles`: height_cm, bust_cm, waist_cm, hips_cm, shoulder_cm, weight_kg, top_size, bottom_size, shoe_size.
 - **`lib/bodyType.ts`** calcula la silueta a partir de pecho/cintura/cadera. 5 tipos: reloj de arena, pera, triángulo invertido, rectángulo, manzana. Cada uno con descripción y 3-4 tips de moda.
 - **`lib/sizeFit.ts`** tabla genérica europea XS-XXXL ↔ medidas en cm. Función `checkFit()` devuelve 5 verdicts: encaja / justa / holgada / pequeña / grande.
@@ -110,7 +125,7 @@ supabase/migrations/
 - **Chip de fit en `ClotheDetail`**: cuando hay medidas + talla de la prenda, sale una franja en verde/ámbar/rojo con el veredicto.
 - **`useProfile` / `useUpdateProfile`** centralizan el acceso al perfil completo con cache via React Query.
 
-### 1.8 Interacción y feedback
+### 1.9 Interacción y feedback
 - **Modales de confirmación personalizados** (`src/components/shared/ConfirmModal.tsx`):
   - Sistema basado en promesas: `const confirm = useConfirm(); const ok = await confirm({ … })`.
   - `ConfirmProvider` montado en `main.tsx` envuelve toda la app.
@@ -120,7 +135,7 @@ supabase/migrations/
 - Toasts auto-desaparecibles (en perfil): operaciones rápidas con feedback no bloqueante.
 - Loading states en formularios y botones críticos.
 
-### 1.9 Infra y seguridad
+### 1.10 Infra y seguridad
 - Row Level Security en todas las tablas.
 - GRANTs explícitos (preparado para el cambio de Supabase del 30-oct-2026).
 - Bucket `clothes-images` con políticas por carpeta de usuario.

@@ -49,7 +49,7 @@ export default function ClotheForm({
   const [categoryId, setCategoryId] = useState<string>('')
   const [brand, setBrand] = useState('')
   const [size, setSize] = useState('')
-  const [color, setColor] = useState<string | null>(null)
+  const [colors, setColors] = useState<string[]>([])
   const [material, setMaterial] = useState('')
   const [tags, setTags] = useState('')
   const [notes, setNotes] = useState('')
@@ -70,7 +70,7 @@ export default function ClotheForm({
       setCategoryId(clothe.category_id ?? '')
       setBrand(clothe.brand ?? '')
       setSize(clothe.size ?? '')
-      setColor(clothe.color ?? null)
+      setColors(clothe.colors ?? (clothe.color ? [clothe.color] : []))
       setMaterial(clothe.material ?? '')
       setTags(clothe.tags.join(', '))
       setNotes(clothe.notes ?? '')
@@ -88,7 +88,7 @@ export default function ClotheForm({
         })
     } else {
       setName(prefill?.name ?? '')
-      setCategoryId(''); setBrand(''); setSize(''); setColor(null); setMaterial('')
+      setCategoryId(''); setBrand(''); setSize(''); setColors([]); setMaterial('')
       setTags(''); setNotes(prefill?.notes ?? ''); setPrice('')
       setOriginalImages([])
       const sharedUrl = prefill?.url ?? ''
@@ -120,10 +120,10 @@ export default function ClotheForm({
   }, [open, clothe, prefill])
 
   // Detectar color dominante de la primera imagen (la portada) y sugerirlo
-  // si la usuaria aún no ha elegido color manualmente.
+  // si la usuaria aún no ha elegido ningún color manualmente.
   useEffect(() => {
     if (!open) return
-    if (color) { setSuggestedColor(null); return }
+    if (colors.length > 0) { setSuggestedColor(null); return }
     if (images.length === 0) { setSuggestedColor(null); return }
     const first = images[0]
     const src = previewOf(first)
@@ -133,7 +133,7 @@ export default function ClotheForm({
       if (!cancelled) setSuggestedColor(name)
     })
     return () => { cancelled = true }
-  }, [open, images, color])
+  }, [open, images, colors])
 
   /** Construye una prenda "virtual" con los valores actuales del formulario,
    *  para que el modal de descripción pueda generarse sin guardar todavía. */
@@ -200,7 +200,8 @@ export default function ClotheForm({
         category_id: categoryId || null,
         brand: brand.trim() || null,
         size: size.trim() || null,
-        color,
+        color: colors[0] ?? null,  // se mantiene por backward compat con esquema antiguo
+        colors,
         material: material.trim() || null,
         tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
         notes: notes.trim() || null,
@@ -283,9 +284,9 @@ export default function ClotheForm({
         </div>
 
         <div>
-          <label className="label">Color</label>
-          <ColorPicker value={color} onChange={setColor} />
-          {suggestedColor && !color && !suggestionDismissed && (
+          <label className="label">Colores</label>
+          <ColorPicker value={colors} onChange={setColors} max={3} />
+          {suggestedColor && colors.length === 0 && !suggestionDismissed && (
             <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-soft text-brand-700 dark:text-brand-200 text-xs animate-fade-in">
               <Wand2 className="w-3.5 h-3.5 shrink-0" />
               <span className="flex-1">
@@ -303,7 +304,7 @@ export default function ClotheForm({
               </span>
               <button
                 type="button"
-                onClick={() => { setColor(suggestedColor); setSuggestionDismissed(true) }}
+                onClick={() => { setColors([suggestedColor]); setSuggestionDismissed(true) }}
                 className="font-semibold underline shrink-0"
               >
                 Usar

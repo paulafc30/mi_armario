@@ -52,7 +52,9 @@ export interface Clothe {
   listed_at: string | null
   brand: string | null
   size: string | null
+  /** @deprecated usar `colors` (array). Se mantiene para legacy/backfill. */
   color: string | null
+  colors: string[]
   material: string | null
   created_at: string
   updated_at: string

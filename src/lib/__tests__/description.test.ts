@@ -25,6 +25,7 @@ function baseClothe(over: Partial<Clothe> = {}): Clothe {
     brand: 'Zara',
     size: 'M',
     color: 'Blanco',
+    colors: ['Blanco'],
     material: null,
     created_at: '',
     updated_at: '',
@@ -58,8 +59,18 @@ describe('generateDescription (anuncio)', () => {
   })
 
   it('añade el color cuando NO está en el nombre', () => {
-    const d = generateDescription(baseClothe({ name: 'Camiseta básica', color: 'Verde' }))
+    const d = generateDescription(baseClothe({ name: 'Camiseta básica', color: 'Verde', colors: ['Verde'] }))
     expect(d.toLowerCase()).toContain('en verde')
+  })
+
+  it('junta varios colores con "y" para dos', () => {
+    const d = generateDescription(baseClothe({ name: 'Camiseta básica', colors: ['Verde', 'Negro'] }))
+    expect(d.toLowerCase()).toContain('en verde y negro')
+  })
+
+  it('junta tres colores con comas y "y" final', () => {
+    const d = generateDescription(baseClothe({ name: 'Camiseta básica', colors: ['Verde', 'Negro', 'Gris'] }))
+    expect(d.toLowerCase()).toContain('en verde, negro y gris')
   })
 
   it('incluye marca, talla y precio', () => {
