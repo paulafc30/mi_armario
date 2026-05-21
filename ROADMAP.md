@@ -242,12 +242,26 @@ supabase/migrations/
   - Si la usuaria ya pickeó un color a mano, no aparece.
 - Maneja silenciosamente errores de CORS, canvas tainting, imágenes vacías, etc.
 
-### 4.6 Múltiples wishlist
-- Carpetas dentro de la wishlist ("verano", "regalos", "rebajas enero").
+### 4.6 Múltiples wishlist ✅
+- **Migración `0010_wishlist_folders.sql`**:
+  - Nueva tabla `wishlists` (las listas/carpetas) con `name`, `color`, RLS y GRANTs.
+  - Lista "Mis deseos" por defecto al registrarse (trigger sobre `profiles`) y backfill para usuarias existentes.
+  - Columna `wishlist_id` añadida a la tabla `wishlist` (los items) con backfill a la primera lista del usuario.
+- **`useWishlistFolders`** (nuevo) + `useWishlist(folderId?)` ahora filtra por lista.
+- **`WishlistFoldersManager`**: modal estilo CategoryManager con CRUD de listas, picker de color, confirm destructivo al borrar.
+- **`WishlistForm`** incluye selector de lista; por defecto coge la lista del filtro activo o la primera del usuario.
+- **`Wishlist` page**: chips horizontales para filtrar (Todas + cada lista con su dot de color), botón engranaje para gestionar listas, empty states adaptados a la lista activa.
 
-### 4.7 Tests
-- Vitest para hooks y librerías.
-- Playwright para flujos end-to-end (auth, crear prenda, mover a venta).
+### 4.7 Tests 🔧 (parcialmente hecho)
+- **Setup Vitest** completo: `vitest.config.ts` con alias `@/` resuelto, scripts `npm test` y `npm run test:run` en package.json.
+- **Tests unitarios** sobre las librerías puras del proyecto:
+  - `src/lib/__tests__/bodyType.test.ts` — calcula los 5 tipos de silueta, valida labels y tips.
+  - `src/lib/__tests__/sizeFit.test.ts` — checkFit con todos los veredictos, normalización de tallas numéricas.
+  - `src/lib/__tests__/description.test.ts` — concordancia de género/número, no-redundancia de color, ficha vs anuncio, hashtags.
+- Pendientes (no hechos):
+  - Tests de hooks de React Query (requieren mocks de Supabase, más complejo).
+  - Tests E2E con Playwright sobre flujos de auth y CRUD.
+  - Tests de componentes UI con Testing Library.
 
 ### 4.8 Política de privacidad y términos
 - Páginas estáticas accesibles desde Perfil.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import { useCreateWishlistItem, useUpdateWishlistItem, useDeleteWishlistItem } from '@/hooks/useWishlist'
+import { useWishlistFolders } from '@/hooks/useWishlistFolders'
 import { useAuth } from '@/hooks/useAuth'
 import { useConfirm } from '@/components/shared/ConfirmModal'
 import { fetchUrlPreview } from '@/lib/utils'
@@ -11,6 +12,7 @@ export interface WishlistPrefill {
   url?: string
   name?: string
   notes?: string
+  wishlist_id?: string | null
   /** Si true, intenta cargar la vista previa automáticamente al abrir. */
   autoFetchPreview?: boolean
 }
@@ -31,12 +33,14 @@ export default function WishlistForm({
   const update = useUpdateWishlistItem()
   const del = useDeleteWishlistItem()
   const confirm = useConfirm()
+  const { data: folders = [] } = useWishlistFolders()
 
   const [url, setUrl] = useState('')
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const [imageUrl, setImageUrl] = useState('')
   const [notes, setNotes] = useState('')
+  const [folderId, setFolderId] = useState<string>('')
   const [loadingPreview, setLoadingPreview] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,15 +53,19 @@ export default function WishlistForm({
       setPrice(item.price ? String(item.price) : '')
       setImageUrl(item.image_url ?? '')
       setNotes(item.notes ?? '')
+      setFolderId(item.wishlist_id ?? '')
     } else {
       setUrl(prefill?.url ?? '')
       setName(prefill?.name ?? '')
       setPrice('')
       setImageUrl('')
       setNotes(prefill?.notes ?? '')
+      // Por defecto a la lista pre-seleccionada (si llega vía Wishlist page filtrada)
+      // o a la primera lista del usuario
+      setFolderId(prefill?.wishlist_id ?? folders[0]?.id ?? '')
     }
     setError(null)
-  }, [open, item, prefill])
+  }, [open, item, prefill, folders])
 
   // Auto-fetch del preview cuando llega prefill con URL y autoFetchPreview activo
   useEffect(() => {
@@ -89,6 +97,7 @@ export default function WishlistForm({
     try {
       const payload = {
         user_id: user.id,
+        wishlist_id: folderId || null,
         url,
         name: name || null,
         price: price ? Number(price) : null,
@@ -141,6 +150,17 @@ export default function WishlistForm({
           <label className="label">Imagen (URL)</label>
           <input className="input" type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
         </div>
+
+        {folders.length > 0 && (
+          <div>
+            <label className="label">Lista</label>
+            <select className="input" value={folderId} onChange={(e) => setFolderId(e.target.value)}>
+              {folders.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="label">Notas</label>

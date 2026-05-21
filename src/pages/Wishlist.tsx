@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, ExternalLink, ImageOff, Heart } from 'lucide-react'
+import { Plus, ExternalLink, ImageOff, Heart, FolderCog } from 'lucide-react'
 import { useWishlist } from '@/hooks/useWishlist'
+import { useWishlistFolders } from '@/hooks/useWishlistFolders'
 import { useSearchStore } from '@/store/search'
 import WishlistForm, { WishlistPrefill } from '@/components/wishlist/WishlistForm'
+import WishlistFoldersManager from '@/components/wishlist/WishlistFoldersManager'
 import EmptyState from '@/components/shared/EmptyState'
-import { formatPrice } from '@/lib/utils'
+import { cx, formatPrice } from '@/lib/utils'
 import { consumeSharedPayload } from '@/lib/sharedItem'
 import type { WishlistItem } from '@/types/database'
 
 export default function Wishlist() {
-  const { data: items = [], isLoading } = useWishlist()
+  // null = "Todas" (sin filtro), id = lista concreta
+  const [activeFolder, setActiveFolder] = useState<string | null>(null)
+  const { data: items = [], isLoading } = useWishlist(activeFolder)
+  const { data: folders = [] } = useWishlistFolders()
   const { query } = useSearchStore()
   const [formOpen, setFormOpen] = useState(false)
+  const [foldersOpen, setFoldersOpen] = useState(false)
   const [editing, setEditing] = useState<WishlistItem | null>(null)
   const [prefill, setPrefill] = useState<WishlistPrefill | undefined>(undefined)
 
@@ -23,10 +29,12 @@ export default function Wishlist() {
         url: shared.url || undefined,
         name: shared.title || undefined,
         autoFetchPreview: !!shared.url,
+        wishlist_id: activeFolder ?? undefined,
       })
       setEditing(null)
       setFormOpen(true)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const filtered = useMemo(() => {
@@ -39,27 +47,76 @@ export default function Wishlist() {
     )
   }, [items, query])
 
+  function openNewItem() {
+    setEditing(null)
+    setPrefill(activeFolder ? { wishlist_id: activeFolder } : undefined)
+    setFormOpen(true)
+  }
+
+  const activeFolderName =
+    activeFolder ? folders.find((f) => f.id === activeFolder)?.name ?? 'Lista' : 'Todas'
+
   return (
     <div className="px-4 pb-4 space-y-5">
       <div className="flex items-end justify-between gap-3">
         <div>
           <h1 className="heading-xl">Deseos</h1>
-          <p className="text-sm text-muted mt-0.5">{items.length} {items.length === 1 ? 'cosa que te gustaría' : 'cosas que te gustarían'}</p>
+          <p className="text-sm text-muted mt-0.5">
+            {items.length} {items.length === 1 ? 'item' : 'items'} en {activeFolderName.toLowerCase()}
+          </p>
         </div>
-        <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
-          <Plus className="w-4 h-4" /> Añadir
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setFoldersOpen(true)} className="btn-secondary" title="Gestionar listas">
+            <FolderCog className="w-4 h-4" />
+          </button>
+          <button onClick={openNewItem} className="btn-primary">
+            <Plus className="w-4 h-4" /> Añadir
+          </button>
+        </div>
       </div>
+
+      {/* Filtro de listas */}
+      {folders.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1">
+          <button onClick={() => setActiveFolder(null)}
+            className={cx(
+              'chip whitespace-nowrap font-medium border-2 transition shrink-0',
+              activeFolder === null
+                ? 'bg-brand-gradient text-white border-transparent shadow-soft'
+                : 'bg-surface border-line-soft text-muted hover:text-ink'
+            )}>
+            Todas
+          </button>
+          {folders.map((f) => {
+            const isActive = activeFolder === f.id
+            return (
+              <button key={f.id} onClick={() => setActiveFolder(isActive ? null : f.id)}
+                className={cx(
+                  'chip whitespace-nowrap font-medium gap-1.5 transition shrink-0 border-2',
+                  isActive ? 'bg-surface text-ink shadow-soft' : 'bg-surface border-line-soft text-muted hover:text-ink'
+                )}
+                style={isActive ? { borderColor: f.color } : undefined}>
+                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.color }} />
+                {f.name}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-center text-muted py-12">Cargando…</p>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Heart}
-          title="Tu lista de deseos está vacía"
+          title={
+            activeFolder
+              ? `"${activeFolderName}" está vacía`
+              : 'Tu lista de deseos está vacía'
+          }
           subtitle="Pega un enlace de Zara, Vinted o donde quieras y guárdalo para más tarde."
           action={
-            <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
+            <button onClick={openNewItem} className="btn-primary">
               <Plus className="w-4 h-4" /> Añadir
             </button>
           }
@@ -96,6 +153,7 @@ export default function Wishlist() {
         item={editing}
         prefill={editing ? undefined : prefill}
       />
+      <WishlistFoldersManager open={foldersOpen} onClose={() => setFoldersOpen(false)} />
     </div>
   )
 }

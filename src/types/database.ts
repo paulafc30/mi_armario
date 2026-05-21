@@ -91,9 +91,18 @@ export interface Wear {
   created_at: string
 }
 
+export interface WishlistFolder {
+  id: string
+  user_id: string
+  name: string
+  color: string
+  created_at: string
+}
+
 export interface WishlistItem {
   id: string
   user_id: string
+  wishlist_id: string | null
   url: string
   name: string | null
   price: number | null
