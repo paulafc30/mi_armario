@@ -153,12 +153,13 @@ export default function ClotheForm({
     sold_at: clothe?.sold_at ?? null,
     brand: brand.trim() || null,
     size: size.trim() || null,
-    color,
+    color: colors[0] ?? null,  
+    colors,            
     material: material.trim() || null,
     created_at: clothe?.created_at ?? new Date().toISOString(),
     updated_at: clothe?.updated_at ?? new Date().toISOString(),
     listed_at: clothe?.listed_at ?? null,
-}), [clothe, user, name, categoryId, brand, size, color, material, tags, notes, price, defaultStatus])
+  }), [clothe, user, name, categoryId, brand, size, colors, material, tags, notes, price, defaultStatus]) 
 
   async function syncImages(clotheId: string, userId: string) {
     const stillThere = new Set(
