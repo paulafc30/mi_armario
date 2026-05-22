@@ -244,6 +244,14 @@ supabase/migrations/
 - Botón en Perfil → genera CSV/JSON con todas las prendas, outfits, wears.
 - Útil para backup personal o migración.
 
+### 4.8 Sección Inspiración (Pinterest + Tiendas) ✅
+- **Migración `0013_inspirations.sql`**: tabla `inspirations` con `kind` ('pinterest' | 'store'), título, url, imagen, posición + RLS + GRANTs.
+- **Hook `useInspirations`** + CRUD (create/update/delete) y helper `isPinterestUrl`.
+- **Nueva página `/inspiracion`** con dos secciones: "Pinterest" (boards y perfiles) y "Tiendas favoritas" (atajos a páginas de novedades).
+- **`InspirationForm`** modal con segmented Pinterest/Tienda, input de URL, botón ✨ para autorellenar título+imagen vía microlink, edición y borrado con confirm destructivo.
+- **5ª pestaña "Ideas"** en el bottom nav (icono Lightbulb) — `grid-cols-5` en móvil, `min-w-[56px]` por celda para que entre todo.
+- Cero scraping y cero API externa: tap en cualquier card abre la URL en pestaña nueva. Combinado con el Web Share Target, si compartes desde Pinterest/Zara cuando estás navegando, va a la wishlist automáticamente.
+
 ### 4.5 Reconocimiento automático de color ✅
 - **`lib/colorExtraction.ts`** sin dependencias externas:
   - Dibuja la imagen en un canvas 64×64.

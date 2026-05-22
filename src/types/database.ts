@@ -95,6 +95,19 @@ export interface Wear {
   created_at: string
 }
 
+export type InspirationKind = 'pinterest' | 'store'
+
+export interface Inspiration {
+  id: string
+  user_id: string
+  kind: InspirationKind
+  title: string | null
+  url: string
+  image_url: string | null
+  position: number
+  created_at: string
+}
+
 export interface WishlistFolder {
   id: string
   user_id: string

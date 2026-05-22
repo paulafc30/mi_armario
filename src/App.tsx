@@ -9,6 +9,7 @@ import Profile from '@/pages/Profile'
 import Armario from '@/pages/Armario'
 import Venta from '@/pages/Venta'
 import Wishlist from '@/pages/Wishlist'
+import Inspiracion from '@/pages/Inspiracion'
 import Share from '@/pages/Share'
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/armario" element={<Armario />} />
         <Route path="/venta" element={<Venta />} />
         <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/inspiracion" element={<Inspiracion />} />
         <Route path="/perfil" element={<Profile />} />
         <Route path="/share" element={<Share />} />
       </Route>

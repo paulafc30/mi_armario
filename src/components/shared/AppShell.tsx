@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { Shirt, Tag, Heart, User } from "lucide-react";
+import { Shirt, Tag, Heart, User, Lightbulb } from "lucide-react";
 import GlobalSearch from "./GlobalSearch";
 import { cx } from "@/lib/utils";
 
@@ -7,6 +7,7 @@ const NAV = [
   { to: "/armario", label: "Armario", icon: Shirt },
   { to: "/venta", label: "Venta", icon: Tag },
   { to: "/wishlist", label: "Deseos", icon: Heart },
+  { to: "/inspiracion", label: "Ideas", icon: Lightbulb },
   { to: "/perfil", label: "Perfil", icon: User },
 ];
 
@@ -35,14 +36,14 @@ export default function AppShell() {
       {/* Bottom nav: se mantiene flotante para mantener el aire visual del fondo */}
       <nav className="fixed bottom-3 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-20 safe-bottom">
         <div className="card-glass rounded-3xl px-2 py-1.5 mx-auto sm:w-auto">
-          <div className="grid grid-cols-4 sm:flex sm:gap-1">
+          <div className="grid grid-cols-5 sm:flex sm:gap-1">
             {NAV.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
                 to={to}
                 className={({ isActive }) =>
                   cx(
-                    "nav-pill min-w-[64px]",
+                    "nav-pill min-w-[56px]",
                     isActive
                       ? "bg-brand-gradient text-white shadow-lift"
                       : "text-muted hover:text-ink hover:bg-surface-soft",
