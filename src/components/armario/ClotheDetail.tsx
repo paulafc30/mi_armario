@@ -26,6 +26,8 @@ export default function ClotheDetail({
   const confirm = useConfirm()
   const { data: profile } = useProfile()
   const [galleryUrls, setGalleryUrls] = useState<string[]>([])
+  const [moveError, setMoveError] = useState<string | null>(null)
+  const [moving, setMoving] = useState(false)
 
   const fitVerdict = clothe ? checkFit(clothe.size, {
     bust_cm: profile?.bust_cm ?? null,
@@ -36,6 +38,7 @@ export default function ClotheDetail({
 
   useEffect(() => {
     if (!open || !clothe) return
+    setMoveError(null)
     setGalleryUrls(clothe.image_url ? [clothe.image_url] : [])
     supabase
       .from('clothe_images')
@@ -59,8 +62,17 @@ export default function ClotheDetail({
       confirmText: 'Mover',
     })
     if (!ok) return
-    await changeStatus.mutateAsync({ id: clothe.id, status: 'baul' })
-    onClose()
+    setMoving(true); setMoveError(null)
+    try {
+      await changeStatus.mutateAsync({ id: clothe.id, status: 'baul' })
+      onClose()
+    } catch (err: any) {
+      // eslint-disable-next-line no-console
+      console.error('Error moviendo a venta', err)
+      setMoveError(err?.message ?? 'No se pudo mover. Mira la consola del navegador para más detalles.')
+    } finally {
+      setMoving(false)
+    }
   }
 
   return (
@@ -111,6 +123,12 @@ export default function ClotheDetail({
 
         {clothe.notes && <p className="text-sm text-muted whitespace-pre-line">{clothe.notes}</p>}
 
+        {moveError && (
+          <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 text-sm break-words">
+            <strong>No se pudo mover:</strong> {moveError}
+          </div>
+        )}
+
         {/* Acción primaria: editar la prenda */}
         <button onClick={onEdit} className="btn-primary w-full">
           <Pencil className="w-4 h-4" /> Editar
@@ -118,9 +136,9 @@ export default function ClotheDetail({
 
         {/* Acción secundaria, deliberadamente discreta */}
         <div className="pt-3 mt-1 border-t border-line-soft">
-          <button onClick={moveToVenta}
-            className="w-full py-2 text-xs text-muted hover:text-ink transition">
-            Mover a la sección de Venta
+          <button onClick={moveToVenta} disabled={moving}
+            className="w-full py-2 text-xs text-muted hover:text-ink transition disabled:opacity-50">
+            {moving ? 'Moviendo…' : 'Mover a la sección de Venta'}
           </button>
         </div>
       </div>
