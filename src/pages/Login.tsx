@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Shirt, ArrowRight } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import HangerIcon from '@/components/shared/HangerIcon'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -66,7 +67,7 @@ export function AuthLayout({
       <div className="w-full max-w-sm relative animate-scale-in">
         <div className="flex flex-col items-center mb-7">
           <div className="w-16 h-16 rounded-2xl bg-brand-gradient text-white flex items-center justify-center shadow-lift">
-            <Shirt className="w-8 h-8" />
+            <HangerIcon className="w-8 h-8" />
           </div>
           <h1 className="heading-xl mt-5 text-center">{title}</h1>
           {subtitle && <p className="text-sm text-muted mt-2 text-center max-w-xs">{subtitle}</p>}

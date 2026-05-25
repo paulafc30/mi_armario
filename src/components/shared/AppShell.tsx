@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { Shirt, Tag, Heart, User, Lightbulb } from "lucide-react";
 import GlobalSearch from "./GlobalSearch";
+import HangerIcon from "./HangerIcon";
 import { cx } from "@/lib/utils";
 
 const NAV = [
@@ -19,7 +20,7 @@ export default function AppShell() {
       <header className="sticky top-0 z-20 bg-page/20 backdrop-blur-xl safe-top">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-gradient text-white shadow-lift shrink-0">
-            <Shirt className="w-5 h-5" />
+            <HangerIcon className="w-5 h-5" />
           </div>
           <div className="flex-1">
             <GlobalSearch />
