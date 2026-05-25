@@ -22,6 +22,11 @@ export interface ClothePrefill {
   name?: string
   url?: string        // si parece imagen, se usa como primera foto
   notes?: string
+  price?: number
+  /** Si viene desde share de Wallapop/Vinted, activamos su toggle al crear. */
+  platform?: 'wallapop' | 'vinted'
+  /** Status forzado al crear (e.g. 'en_venta' cuando viene de Wallapop). */
+  forceStatus?: ClothesStatus
 }
 
 export default function ClotheForm({
@@ -89,14 +94,16 @@ export default function ClotheForm({
     } else {
       setName(prefill?.name ?? '')
       setCategoryId(''); setBrand(''); setSize(''); setColors([]); setMaterial('')
-      setTags(''); setNotes(prefill?.notes ?? ''); setPrice('')
+      setTags('')
+      setNotes(prefill?.notes ?? '')
+      setPrice(prefill?.price != null ? String(prefill.price) : '')
       setOriginalImages([])
       const sharedUrl = prefill?.url ?? ''
       if (sharedUrl && isImageUrl(sharedUrl)) {
         // URL directa a una imagen — la usamos como primera foto
         setImages([{ kind: 'new-url', tempId: crypto.randomUUID(), url: sharedUrl }])
       } else if (sharedUrl) {
-        // URL de página de producto: pedimos el og:image vía microlink
+        // URL de página de producto: pedimos los metadatos vía microlink
         setImages([])
         setFetchingPreview(true)
         fetchUrlPreview(sharedUrl)
@@ -105,9 +112,10 @@ export default function ClotheForm({
             if (preview.image) {
               setImages([{ kind: 'new-url', tempId: crypto.randomUUID(), url: preview.image }])
             }
-            if (preview.title && !prefill?.name) {
-              setName(preview.title)
-            }
+            // No pisamos lo que ya venía en prefill
+            if (preview.title && !prefill?.name) setName(preview.title)
+            if (preview.description && !prefill?.notes) setNotes(preview.description)
+            if (preview.price != null && prefill?.price == null) setPrice(String(preview.price))
           })
           .finally(() => setFetchingPreview(false))
       } else {
@@ -196,7 +204,7 @@ export default function ClotheForm({
     if (!user) return
     setSubmitting(true); setError(null)
     try {
-      const payload = {
+      const payload: any = {
         name: name.trim(),
         category_id: categoryId || null,
         brand: brand.trim() || null,
@@ -209,13 +217,19 @@ export default function ClotheForm({
         price: price ? Number(price) : null,
       }
 
+      // Al crear desde share de Wallapop/Vinted, activar el toggle correspondiente
+      if (!clothe && prefill?.platform === 'wallapop') payload.on_wallapop = true
+      if (!clothe && prefill?.platform === 'vinted') payload.on_vinted = true
+
       let clotheId: string
       if (clothe) {
         await updateMut.mutateAsync({ id: clothe.id, ...payload })
         clotheId = clothe.id
       } else {
         const created = await createMut.mutateAsync({
-          user_id: user.id, status: defaultStatus, ...payload,
+          user_id: user.id,
+          status: prefill?.forceStatus ?? defaultStatus,
+          ...payload,
         })
         clotheId = created.id
       }
@@ -245,10 +259,16 @@ export default function ClotheForm({
   return (
     <Modal open={open} onClose={onClose} title={clothe ? 'Editar prenda' : 'Nueva prenda'}>
       <form onSubmit={handleSubmit} className="space-y-4">
+        {prefill?.platform && !clothe && (
+          <div className="px-3 py-2 rounded-xl bg-brand-soft text-brand-700 dark:text-brand-200 text-xs">
+            <strong>Datos extraídos de {prefill.platform === 'wallapop' ? 'Wallapop' : 'Vinted'}.</strong>{' '}
+            Revisa el precio y rellena talla, color y composición si faltan.
+          </div>
+        )}
         {fetchingPreview && (
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-soft text-brand-700 text-xs">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            Obteniendo imagen del enlace…
+            Obteniendo datos del enlace…
           </div>
         )}
         <MultiImagePicker images={images} onChange={setImages} />

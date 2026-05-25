@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { consumeSharedPayload } from '@/lib/sharedItem'
+import { consumeSharedPayload, detectSalePlatform, extractTitleFromShareText } from '@/lib/sharedItem'
 import type { ClothePrefill } from '@/components/armario/ClotheForm'
 import { Plus, Tag } from 'lucide-react'
 import { useClothes } from '@/hooks/useClothes'
@@ -27,19 +27,25 @@ export default function Venta() {
   const [editing, setEditing] = useState<Clothe | null>(null)
   const [prefill, setPrefill] = useState<ClothePrefill | undefined>(undefined)
 
-  // Consumir un share apuntado a Venta y abrir el formulario en estado Baúl
+  // Consumir un share apuntado a Venta. Si viene de Wallapop/Vinted, lo
+  // detectamos, extraemos el título de las comillas y dejamos el toggle de
+  // la plataforma activado + status 'en_venta' (la prenda ya está publicada).
   useEffect(() => {
     const shared = consumeSharedPayload('venta')
     if (shared) {
+      const platform = detectSalePlatform(shared.url)
+      const titleFromText = extractTitleFromShareText(shared.text)
       setPrefill({
-        name: shared.title || undefined,
+        name: titleFromText || shared.title || undefined,
         url: shared.url || undefined,
-        notes: shared.url ? `Compartido desde: ${shared.url}` : undefined,
+        platform: platform ?? undefined,
+        forceStatus: platform ? 'en_venta' : undefined,
       })
       setEditing(null)
-      setTab('baul')
+      setTab(platform ? 'en_venta' : 'baul')
       setFormOpen(true)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const counts = useMemo(() => {

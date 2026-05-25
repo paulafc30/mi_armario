@@ -38,18 +38,42 @@ export function formatPrice(value: number | null | undefined): string {
 export async function fetchUrlPreview(url: string): Promise<{
   title?: string
   image?: string
-  price?: string
+  description?: string
+  price?: number
 } | null> {
   try {
     const r = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`)
     if (!r.ok) return null
     const json = await r.json()
     if (json.status !== 'success') return null
+    const data = json.data ?? {}
     return {
-      title: json.data?.title,
-      image: json.data?.image?.url ?? json.data?.logo?.url,
+      title: typeof data.title === 'string' ? data.title : undefined,
+      image: data.image?.url ?? data.logo?.url,
+      description: typeof data.description === 'string' ? data.description : undefined,
+      price: extractPriceFromMeta(data),
     }
   } catch {
     return null
   }
+}
+
+/** Intenta sacar un precio numérico de los metadatos de microlink. */
+function extractPriceFromMeta(data: unknown): number | undefined {
+  if (!data || typeof data !== 'object') return undefined
+  const d = data as Record<string, unknown>
+  // Algunos marketplaces exponen og:price:amount → microlink puede devolverlo en data.price
+  if (typeof d.price === 'number' && isFinite(d.price)) return d.price
+  if (typeof d.price === 'string') {
+    const n = parseFloat(d.price.replace(',', '.'))
+    if (!isNaN(n) && isFinite(n)) return n
+  }
+  // Fallback: buscar "N €" o "N,N €" en título o descripción
+  const haystack = [d.title, d.description].filter((x) => typeof x === 'string').join(' ')
+  const m = haystack.match(/(\d+(?:[.,]\d+)?)\s*€/)
+  if (m) {
+    const n = parseFloat(m[1].replace(',', '.'))
+    if (!isNaN(n) && isFinite(n)) return n
+  }
+  return undefined
 }

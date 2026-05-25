@@ -46,3 +46,32 @@ export function extractUrl(text: string): string {
 export function isImageUrl(url: string): boolean {
   return /\.(jpe?g|png|webp|gif|avif)(\?|#|$)/i.test(url)
 }
+
+/**
+ * Intenta extraer el título del producto del texto compartido por las apps
+ * típicas de venta de segunda mano. Cada una tiene su patrón:
+ *   - Wallapop: `Vendo "TITULO" en Wallapop URL`
+ *   - Vinted:   `Mira "TITULO" en Vinted` u otros formatos por idioma
+ * Si no encaja en ningún patrón, devuelve null y se cae al og:title.
+ */
+export function extractTitleFromShareText(text: string): string | null {
+  if (!text) return null
+  const wallapop = text.match(/(?:vendo|venta)\s+["“”„«»]([^"“”„«»]+)["“”„«»]?\s+en\s+wallapop/i)
+  if (wallapop) return wallapop[1].trim()
+  const vinted = text.match(/(?:mira|consulta|check)\s*[^"]*["“”„«»]([^"“”„«»]+)["“”„«»]/i)
+  if (vinted) return vinted[1].trim()
+  // Cualquier texto largo entre comillas como último recurso
+  const generic = text.match(/["“”„«»]([^"“”„«»]{4,})["“”„«»]/)
+  if (generic) return generic[1].trim()
+  return null
+}
+
+export type SalePlatform = 'wallapop' | 'vinted'
+
+/** Detecta si la URL pertenece a Wallapop o Vinted. */
+export function detectSalePlatform(url: string): SalePlatform | null {
+  if (!url) return null
+  if (/wallapop\./i.test(url)) return 'wallapop'
+  if (/vinted\./i.test(url)) return 'vinted'
+  return null
+}

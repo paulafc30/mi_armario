@@ -174,6 +174,20 @@ supabase/migrations/
 
 ## 3. Funcionalidades planeadas 📦
 
+### 3.6 Compartir desde Wallapop / Vinted al armario ✅
+- Detección automática de plataforma según el dominio (`wallapop.*` o `vinted.*`).
+- Parser de texto compartido: extrae el título de las comillas tipográficas (Wallapop manda `Vendo "TITULO" en Wallapop`, Vinted patrones similares).
+- `fetchUrlPreview()` ampliado para devolver también descripción y precio cuando el listing lo expone vía `og:price:amount`, o parseando "N €" del título/descripción como fallback.
+- `ClothePrefill` extendido con `price`, `platform`, `forceStatus`.
+- `ClotheForm` al abrir desde share:
+  - Banner coral arriba: "Datos extraídos de Wallapop/Vinted. Revisa el precio y rellena talla, color y composición si faltan."
+  - Notes → descripción del listado.
+  - Price → precio detectado.
+  - Imagen → og:image.
+  - On guardar: `on_wallapop=true` o `on_vinted=true` según la plataforma + status `'en_venta'` (ya está publicada).
+- Página `Venta` cambia automáticamente a la pestaña *En Venta* cuando el share viene de una plataforma reconocida.
+- Honesto: talla y composición no se extraen porque ninguna de las dos plataformas las expone en metadatos estructurados — se completan a mano.
+
 ### 3.1 Web Share Target ✅
 - Manifest extendido con `share_target` (GET con title/text/url).
 - Página `/share` con chooser entre armario / venta / wishlist.
