@@ -179,8 +179,14 @@ export default function Armario() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {outfits.map((o) => {
-              const previews = o.clothe_ids.slice(0, 4)
-                .map((id) => clothes.find((c) => c.id === id)?.image_url).filter(Boolean) as string[]
+              // Si el outfit tiene fotos propias, usar ésas (preferidas).
+              // Si no, caer a portadas de sus prendas, como antes.
+              const ownPhotos = (o.image_urls ?? []).slice(0, 4)
+              const previews = ownPhotos.length > 0
+                ? ownPhotos
+                : (o.clothe_ids.slice(0, 4)
+                    .map((id) => clothes.find((c) => c.id === id)?.image_url)
+                    .filter(Boolean) as string[])
               return (
                 <button key={o.id} onClick={() => { setOutfitEditing(o); setOutfitFormOpen(true) }} className="card overflow-hidden text-left">
                   <div className="aspect-square grid grid-cols-2 gap-px bg-surface-soft">

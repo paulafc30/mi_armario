@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical } from 'lucide-react'
+import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical, Camera } from 'lucide-react'
 import { cx } from '@/lib/utils'
 import { compressImage } from '@/lib/imageCompression'
 
@@ -35,6 +35,7 @@ export default function MultiImagePicker({
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
 
   async function addFiles(files: FileList | File[]) {
     setError(null)
@@ -248,6 +249,24 @@ export default function MultiImagePicker({
         className="hidden"
         onChange={(e) => e.target.files && addFiles(e.target.files)}
       />
+      {/* Input específico para abrir la cámara directamente en móvil */}
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => e.target.files && addFiles(e.target.files)}
+      />
+
+      <button
+        type="button"
+        onClick={() => cameraRef.current?.click()}
+        disabled={processing}
+        className="btn-secondary w-full justify-center text-sm"
+      >
+        <Camera className="w-4 h-4" /> Tomar foto con la cámara
+      </button>
 
       {/* Añadir por URL */}
       {urlMode ? (

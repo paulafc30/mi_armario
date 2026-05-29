@@ -9,11 +9,14 @@ export default function ShareOutfitModal({
   onClose,
   outfitName,
   clotheIds,
+  photoUrls = [],
 }: {
   open: boolean
   onClose: () => void
   outfitName: string
   clotheIds: string[]
+  /** Fotos propias del outfit. Si hay, se usan en lugar de las prendas para el collage. */
+  photoUrls?: string[]
 }) {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,8 +31,8 @@ export default function ShareOutfitModal({
       setPreviewUrl(null); setBlob(null); setError(null); setFeedback(null)
       return
     }
-    if (clotheIds.length === 0) {
-      setError('Este outfit no tiene prendas para compartir.')
+    if (clotheIds.length === 0 && photoUrls.length === 0) {
+      setError('Este outfit no tiene fotos ni prendas para compartir.')
       return
     }
 
@@ -38,19 +41,26 @@ export default function ShareOutfitModal({
 
     ;(async () => {
       try {
-        const { data, error: dbErr } = await supabase
-          .from('clothes')
-          .select('id, image_url')
-          .in('id', clotheIds.slice(0, 9))
-        if (dbErr) throw dbErr
-        const byId = new Map((data ?? []).map((r: { id: string; image_url: string | null }) => [r.id, r.image_url]))
-        // Respetamos el orden de clotheIds tal como vinieron del outfit
-        const urls = clotheIds
-          .map((id) => byId.get(id))
-          .filter((u): u is string => !!u)
+        // Prioridad 1: si el outfit tiene fotos propias, usamos esas
+        let urls: string[] = photoUrls.slice(0, 9)
+
+        // Si no llegan suficientes con las fotos, rellenamos con prendas
+        if (urls.length < 9 && clotheIds.length > 0) {
+          const remaining = 9 - urls.length
+          const { data, error: dbErr } = await supabase
+            .from('clothes')
+            .select('id, image_url')
+            .in('id', clotheIds.slice(0, remaining))
+          if (dbErr) throw dbErr
+          const byId = new Map((data ?? []).map((r: { id: string; image_url: string | null }) => [r.id, r.image_url]))
+          const fromClothes = clotheIds.slice(0, remaining)
+            .map((id) => byId.get(id))
+            .filter((u): u is string => !!u)
+          urls = [...urls, ...fromClothes]
+        }
 
         if (urls.length === 0) {
-          if (!cancelled) setError('Las prendas del outfit no tienen foto.')
+          if (!cancelled) setError('Ni las fotos ni las prendas del outfit tienen imagen.')
           return
         }
 
@@ -68,7 +78,7 @@ export default function ShareOutfitModal({
     return () => {
       cancelled = true
     }
-  }, [open, outfitName, clotheIds.join(',')])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, outfitName, clotheIds.join(','), photoUrls.join(',')])  // eslint-disable-line react-hooks/exhaustive-deps
 
   // Liberar la URL objeto cuando cambie o se cierre
   useEffect(() => {

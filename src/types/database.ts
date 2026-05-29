@@ -83,6 +83,16 @@ export interface OutfitItem {
   clothe_id: string
 }
 
+export interface OutfitImage {
+  id: string
+  outfit_id: string
+  user_id: string
+  url: string
+  path: string | null
+  position: number
+  created_at: string
+}
+
 export interface Wear {
   id: string
   user_id: string
