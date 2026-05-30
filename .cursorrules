@@ -1,0 +1,155 @@
+# Reglas para asistentes de IA (Cursor, Windsurf, Copilot…)
+# editando este proyecto
+
+## Contexto del proyecto
+
+Mi Armario es una PWA personal de gestión de armario, ventas (Wallapop/Vinted),
+lista de deseos, inspiración y planificación de outfits. Una sola usuaria
+hispanohablante, frontend React + Vite + TS + Tailwind, backend Supabase
+(Auth + Postgres + Storage). Sin SSR, sin backend propio. Documentación
+completa en `docs/`.
+
+## Idioma
+
+- Comentarios, mensajes de error y textos UI **en español**.
+- Nombres técnicos (variables, funciones, archivos) en inglés.
+- Conceptos de dominio que solo existen en español (categoría, talla, prenda) en español.
+
+## Reglas duras (no las rompas)
+
+### Estilo
+
+1. **Tailwind con tokens semánticos.** Usa `bg-surface`, `text-ink`, `text-muted`,
+   `border-line`, `border-line-soft`, `bg-page`, `bg-brand-soft`. NUNCA uses
+   `bg-white`, `text-gray-X`, `border-gray-X` raw — rompen el modo oscuro.
+2. **Colores fijos para estados**:
+   - destructivo: red-50, red-600, red-700 (+ `dark:bg-red-500/10`)
+   - éxito: emerald-50, emerald-700 (+ `dark:bg-emerald-500/10`)
+   - aviso: amber-100, amber-800 (+ `dark:bg-amber-500/15`)
+   - brand (coral): paleta `brand-50` … `brand-950`, pivote `brand-500 = #FF5771`
+3. **Sombras**: `shadow-soft`, `shadow-lift`, `shadow-glow`. No `shadow-md` raw.
+4. **Radius**: `rounded-xl` botones/inputs, `rounded-2xl` cards/modales,
+   `rounded-3xl` hero/glass, `rounded-full` chips.
+5. **Helpers de clases**: usa `cx(...)` de `@/lib/utils`. No `clsx` ni `classnames`.
+
+### Componentes
+
+1. Solo functional components con hooks. Cero clases.
+2. Naming: PascalCase componentes, useCamelCase hooks, camelCase helpers.
+3. Imports con alias `@/` (apunta a `src/`).
+4. Iconos: lucide-react. Si no existe el que buscas, créalo inline (ver
+   `src/components/shared/HangerIcon.tsx` como ejemplo).
+
+### Confirmaciones
+
+**NUNCA uses `window.confirm()`.** Siempre vía hook:
+
+```tsx
+const confirm = useConfirm()
+const ok = await confirm({
+  title: '...',
+  message: '...',
+  confirmText: '...',
+  destructive: true,
+})
+if (!ok) return
+```
+
+### Subida de imágenes
+
+**NUNCA llames a `supabase.storage` directamente.** Usa los helpers:
+
+```ts
+import { uploadImage, deleteImage, uploadAvatar, deleteAvatar } from '@/lib/images'
+import { compressImage } from '@/lib/imageCompression'
+
+const compressed = await compressImage(file)
+const { url, path } = await uploadImage(compressed, userId)
+```
+
+El `MultiImagePicker` ya comprime. En código fuera del picker, hay que llamar
+a `compressImage` explícitamente antes.
+
+### Datos
+
+1. **Páginas no llaman a Supabase directamente.** Siempre vía un hook (`useClothes`,
+   `useOutfits`, etc.).
+2. **Mutaciones críticas**: `await mutateAsync(...)` dentro de `try/catch` + surface
+   del error al usuario. Nada de `mutate()` fire-and-forget para acciones que pueden
+   fallar visiblemente.
+3. **queryKey conventions** (ver `docs/ARCHITECTURE.md`):
+   - `['clothes', statuses[]]`
+   - `['outfits']`
+   - `['wears', startISO, endISO]`
+   - `['wishlist', folderId ?? 'all']`
+   - `['profile', userId]`
+4. Para invalidar caché tras mutar: `qc.invalidateQueries({ queryKey: [...] })`.
+
+### TypeScript
+
+1. `strict: true`. No `any` salvo en parsing de respuestas externas (microlink,
+   Supabase sin tipo Database) y comentado.
+2. Tipos del schema en `src/types/database.ts` mantenidos a mano. Si añades
+   tabla/columna, actualízalo.
+
+### Migraciones SQL
+
+1. Numeradas `NNNN_descripcion.sql`, padded a 4 dígitos.
+2. **Idempotentes**: `IF NOT EXISTS`, `DROP POLICY IF EXISTS` antes de crear.
+3. Cada tabla nueva en `public` termina con los 3 GRANTs:
+   ```sql
+   grant select                          on public.<tabla> to anon;
+   grant select, insert, update, delete  on public.<tabla> to authenticated;
+   grant all                             on public.<tabla> to service_role;
+   ```
+4. RLS activado + policy estándar:
+   ```sql
+   alter table public.<tabla> enable row level security;
+   drop policy if exists "<tabla> all own" on public.<tabla>;
+   create policy "<tabla> all own" on public.<tabla>
+     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+   ```
+
+## Decisiones técnicas a respetar
+
+Lee `docs/adr/` para entender el porqué. Resumen:
+
+- ADR-0001: Stack React + Vite + Supabase. No Next.js, no Firebase.
+- ADR-0002: Modo oscuro vía CSS variables semánticas, no `dark:` variants.
+- ADR-0003: Custom confirm modal con `useConfirm()`. No `window.confirm`.
+- ADR-0004: Multi-imagen vía tabla separada + trigger de portada (no array).
+- ADR-0005: GRANTs explícitos en todas las tablas (anti-cambio Supabase oct-26).
+- ADR-0006: Compresión de imágenes client-side antes del upload.
+- ADR-0007: Web Share Target con handoff vía sessionStorage.
+- ADR-0008: microlink.io para previews de URL (sin backend).
+
+## Lo que NO hacemos
+
+- ❌ shadcn/ui, Material UI, Chakra (UI custom Tailwind + lucide).
+- ❌ clsx / classnames (usar `cx` propio).
+- ❌ formik / react-hook-form (forms controlados simples).
+- ❌ i18n (app monolingüe).
+- ❌ lodash.
+- ❌ State manager global salvo Zustand para el buscador.
+- ❌ window.confirm() / window.alert() / window.prompt().
+- ❌ Tipos auto-generados de Supabase (mantenemos manuales).
+
+## Documentación a actualizar al hacer cambios
+
+- Feature nueva implementada → mover de backlog a "hecho" en `ROADMAP.md`.
+- Decisión técnica relevante → nuevo ADR en `docs/adr/`.
+- Nueva convención de código → `docs/CODE_STYLE.md`.
+- Nuevo flujo o módulo → `docs/ARCHITECTURE.md`.
+- Cambio de setup o stack → `README.md` raíz.
+
+## Estilo de prosa en la conversación (cuando interactúes con la usuaria)
+
+- Tutea, tono cercano pero claro y técnico cuando hace falta.
+- Sé honesto/a con las limitaciones. Si algo no se puede hacer bien (scraping,
+  APIs cerradas, etc.) dilo explícitamente y propón alternativas realistas.
+- Antes de cambios grandes que tocan esquema o flujos, propón el plan en pocas
+  frases y deja decidir.
+- Después de hacer cambios, resume qué tocó qué y los pasos para aplicar
+  (commit/push/migración).
+- Usa prosa por defecto, listas solo cuando aportan estructura real (pasos
+  numerados, opciones equivalentes, tablas).
