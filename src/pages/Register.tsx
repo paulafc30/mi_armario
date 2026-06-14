@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { AuthLayout } from './Login'
+import PasswordInput from '@/components/shared/PasswordInput'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -34,8 +35,14 @@ export default function Register() {
         </div>
         <div>
           <label className="label" htmlFor="password">Contraseña</label>
-          <input id="password" type="password" required value={password} minLength={6}
-            onChange={(e) => setPassword(e.target.value)} className="input" placeholder="Mínimo 6 caracteres" />
+          <PasswordInput
+            id="password"
+            required
+            value={password}
+            minLength={6}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mínimo 6 caracteres"
+          />
         </div>
 
         {error && <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</p>}

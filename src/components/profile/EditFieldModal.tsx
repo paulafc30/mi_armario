@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Modal from '@/components/shared/Modal'
+import PasswordInput from '@/components/shared/PasswordInput'
 
 export default function EditFieldModal({
   open,
@@ -60,15 +61,26 @@ export default function EditFieldModal({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="label">{label}</label>
-          <input
-            type={type}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={placeholder}
-            className="input"
-            autoFocus
-            required
-          />
+          {type === 'password' ? (
+            <PasswordInput
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={placeholder}
+              autoFocus
+              required
+              autoComplete="new-password"
+            />
+          ) : (
+            <input
+              type={type}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={placeholder}
+              className="input"
+              autoFocus
+              required
+            />
+          )}
           {hint && <p className="text-xs text-muted mt-1.5">{hint}</p>}
         </div>
 

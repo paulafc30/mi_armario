@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import HangerIcon from '@/components/shared/HangerIcon'
+import PasswordInput from '@/components/shared/PasswordInput'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -32,9 +33,14 @@ export default function Login() {
         </div>
         <div>
           <label className="label" htmlFor="password">Contraseña</label>
-          <input id="password" type="password" required autoComplete="current-password"
-            value={password} onChange={(e) => setPassword(e.target.value)}
-            className="input" placeholder="••••••••" />
+          <PasswordInput
+            id="password"
+            required
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
         </div>
 
         {error && <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</p>}
