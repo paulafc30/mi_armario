@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #fff7f8;
+        margin: 0;
+        padding: 40px 20px;
+      }
+      .container {
+        max-width: 480px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 40px;
+        border: 1px solid #ebe0e4;
+        box-shadow: 0 1px 4px rgba(239, 58, 89, 0.06);
+      }
+      .logo-wrap {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 32px;
+      }
+      .logo-icon {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+      }
+      .logo-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.02em;
+      }
+      .divider {
+        height: 1px;
+        background: linear-gradient(to right, transparent, #ebe0e4, transparent);
+        margin-bottom: 28px;
+      }
+      h1 {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.02em;
+        margin: 0 0 10px;
+      }
+      p {
+        color: #64748b;
+        font-size: 14px;
+        line-height: 1.65;
+        margin: 0 0 28px;
+      }
+      .btn {
+        display: inline-block;
+        background-image: linear-gradient(135deg, #ff5771 0%, #ef3a59 100%);
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 13px 28px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(239, 58, 89, 0.30);
+      }
+      .footer {
+        margin-top: 32px;
+        padding-top: 20px;
+        border-top: 1px solid #ebe0e4;
+        font-size: 12px;
+        color: #64748b;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo-wrap">
+        <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <rect width="22" height="22" x="1" y="1" rx="6" fill="#ef3a59"/>
+          <g fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="6" r="1.5"/>
+            <path d="M12 7.5 V11"/>
+            <path d="M4.5 18 L12 11 L19.5 18"/>
+            <path d="M4 18 H20"/>
+          </g>
+        </svg>
+        <span class="logo-name">Mi Armario</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <h1>Restablecer contraseña</h1>
+      <p>
+        Hemos recibido una solicitud para cambiar la contraseña de tu cuenta.
+        Haz clic en el botón para continuar.
+      </p>
+
+      <a href="{{ .ConfirmationURL }}" class="btn">Cambiar contraseña</a>
+
+      <div class="footer">
+        Si no solicitaste este cambio, puedes ignorar este mensaje.<br />
+        El enlace expira en 1 hora.
+      </div>
+    </div>
+  </body>
+</html>

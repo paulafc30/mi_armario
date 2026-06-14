@@ -1,0 +1,3 @@
+[auth.email.template.recovery]
+subject = "Restablece tu contraseña – Mi Armario"
+content_path = "./templates/recovery.html"
