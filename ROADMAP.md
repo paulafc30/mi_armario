@@ -228,6 +228,16 @@ supabase/migrations/
 
 ## 4. Backlog / ideas futuras 💡
 
+### 4.0 Sincronización con Vinted y Wallapop
+- Botón "Sincronizar" en la sección Venta que importa automáticamente las prendas publicadas.
+- **Arquitectura**: Supabase Edge Function como proxy (evita CORS y bloqueos de IP de CDN).
+  - Acepta perfil URL + cookies de sesión del usuario en Vinted/Wallapop.
+  - Descarga imágenes server-side y las re-sube al bucket `clothes-images`.
+  - Upsert en `clothes` comparando por `vinted_id` / `wallapop_id` para evitar duplicados.
+- **Schema pendiente**: añadir columnas `vinted_id text` y `wallapop_id text` a `clothes`.
+- **Por qué Edge Function**: las imágenes de Vinted requieren firma (`?s=...`) y bloquean por IP toda descarga fuera de su CDN allowlist. Desde el navegador, CORS impide fetch(). Solo un proxy server-side lo resuelve.
+- De momento: las prendas se importan manualmente (datos sí, imágenes se añaden a mano).
+
 ### 4.1 Escáner inteligente de prendas con IA
 - **Requiere API de pago (Claude Vision, Google Gemini, OpenAI).**
 - Foto de la prenda o de la etiqueta → IA identifica:
