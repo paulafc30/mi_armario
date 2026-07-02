@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react'
-import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical, Camera } from 'lucide-react'
+import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical, Camera, Sparkles } from 'lucide-react'
 import { cx } from '@/lib/utils'
 import { compressImage } from '@/lib/imageCompression'
+import { usePrettify } from '@/hooks/usePrettify'
 
 /** Estado de cada imagen en el picker. */
 export type PickerImage =
@@ -31,17 +32,19 @@ export default function MultiImagePicker({
   const [urlValue, setUrlValue] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
+  const [prettifyingIdx, setPrettifyingIdx] = useState<number | null>(null)
   // Drag-reorder interno entre miniaturas
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
+  const { prettify } = usePrettify()
 
   async function addFiles(files: FileList | File[]) {
     setError(null)
     const list = Array.from(files).filter((f) => f.type.startsWith('image/'))
     if (list.length === 0) {
-      setError('Solo se permiten imágenes (jpg, png, webp…)')
+      setError('Solo se permiten imagenes (jpg, png, webp...)')
       return
     }
     setProcessing(true)
@@ -67,6 +70,34 @@ export default function MultiImagePicker({
       setError(e?.message ?? 'No se pudo procesar la imagen')
     } finally {
       setProcessing(false)
+    }
+  }
+
+  async function prettifyAt(index: number) {
+    const img = images[index]
+    if (!img) return
+    setPrettifyingIdx(index)
+    setError(null)
+    try {
+      const source = img.kind === 'new-file' ? img.file : previewOf(img)
+      const result = await prettify(source)
+      if (!result) {
+        setError('No se pudo eliminar el fondo. Prueba con otra foto.')
+        return
+      }
+      const preview = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader()
+        r.onload = () => resolve(r.result as string)
+        r.onerror = reject
+        r.readAsDataURL(result)
+      })
+      const next = [...images]
+      next[index] = { kind: 'new-file', tempId: crypto.randomUUID(), file: result, preview }
+      onChange(next)
+    } catch (e: any) {
+      setError(e?.message ?? 'Error al aplicar Prettify')
+    } finally {
+      setPrettifyingIdx(null)
     }
   }
 
@@ -127,7 +158,6 @@ export default function MultiImagePicker({
   // --------- Drag-reorder interno entre miniaturas ---------
   function handleTileDragStart(e: React.DragEvent, i: number) {
     e.dataTransfer.effectAllowed = 'move'
-    // Marcamos el payload como reorder interno (no son archivos)
     e.dataTransfer.setData('text/x-mi-armario-reorder', String(i))
     setDraggingIdx(i)
   }
@@ -167,10 +197,11 @@ export default function MultiImagePicker({
         {images.map((img, i) => {
           const isDragging = draggingIdx === i
           const isOver = overIdx === i && draggingIdx !== null && draggingIdx !== i
+          const isPrettifying = prettifyingIdx === i
           return (
             <div
               key={keyOf(img)}
-              draggable
+              draggable={!isPrettifying}
               onDragStart={(e) => handleTileDragStart(e, i)}
               onDragOver={(e) => handleTileDragOver(e, i)}
               onDrop={(e) => handleTileDrop(e, i)}
@@ -183,35 +214,59 @@ export default function MultiImagePicker({
             >
               <img src={previewOf(img)} alt="" className="w-full h-full object-cover pointer-events-none" />
 
-              {/* Indicador de arrastre (visible en hover) */}
-              <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition pointer-events-none flex items-end justify-center pb-0.5">
-                <GripVertical className="w-3.5 h-3.5 text-white/90 rotate-90" />
-              </div>
-
-              {/* Botón eliminar */}
-              <button type="button" onClick={() => removeAt(i)}
-                className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-80 hover:opacity-100 hover:bg-black/80 transition"
-                title="Quitar">
-                <X className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Marcar como portada */}
-              {i === 0 ? (
-                <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-brand-700 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
-                  <Star className="w-2.5 h-2.5 fill-white" /> Portada
+              {/* Overlay mientras se procesa Prettify */}
+              {isPrettifying && (
+                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
+                  <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  <span className="text-white text-[10px] font-medium">Prettify...</span>
                 </div>
-              ) : (
-                <button type="button" onClick={() => setCover(i)}
-                  className="absolute top-1 left-1 p-1 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 hover:bg-black/70 transition"
-                  title="Marcar como portada">
-                  <Star className="w-3.5 h-3.5" />
-                </button>
+              )}
+
+              {/* Controles (visibles en hover si no está procesando) */}
+              {!isPrettifying && (
+                <>
+                  {/* Indicador de arrastre */}
+                  <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition pointer-events-none flex items-end justify-center pb-0.5">
+                    <GripVertical className="w-3.5 h-3.5 text-white/90 rotate-90" />
+                  </div>
+
+                  {/* Boton eliminar */}
+                  <button type="button" onClick={() => removeAt(i)}
+                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-80 hover:opacity-100 hover:bg-black/80 transition"
+                    title="Quitar">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Boton Prettify (eliminar fondo con IA) */}
+                  <button
+                    type="button"
+                    onClick={() => prettifyAt(i)}
+                    disabled={prettifyingIdx !== null}
+                    className="absolute bottom-1 right-1 p-1 rounded-full bg-brand-700/90 text-white opacity-0 group-hover:opacity-100 hover:bg-brand-600 transition"
+                    title="Prettify: eliminar fondo con IA"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </button>
+
+                  {/* Portada / marcar como portada */}
+                  {i === 0 ? (
+                    <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-brand-700 text-white text-[10px] font-medium px-1.5 py-0.5 rounded-full">
+                      <Star className="w-2.5 h-2.5 fill-white" /> Portada
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => setCover(i)}
+                      className="absolute top-1 left-1 p-1 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 hover:bg-black/70 transition"
+                      title="Marcar como portada">
+                      <Star className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </>
               )}
             </div>
           )
         })}
 
-        {/* Tile para añadir */}
+        {/* Tile para anadir */}
         <button
           type="button"
           disabled={processing}
@@ -228,13 +283,13 @@ export default function MultiImagePicker({
           {processing ? (
             <>
               <Loader2 className="w-6 h-6 mb-0.5 animate-spin" />
-              <span className="text-[11px] font-medium">Comprimiendo…</span>
+              <span className="text-[11px] font-medium">Comprimiendo...</span>
             </>
           ) : (
             <>
               <ImagePlus className="w-6 h-6 mb-0.5" />
               <span className="text-[11px] font-medium leading-tight text-center px-1">
-                {filesDragging ? '¡Suelta aquí!' : images.length === 0 ? 'Arrastra o pulsa' : 'Añadir'}
+                {filesDragging ? 'Suelta aqui!' : images.length === 0 ? 'Arrastra o pulsa' : 'Anadir'}
               </span>
             </>
           )}
@@ -249,7 +304,6 @@ export default function MultiImagePicker({
         className="hidden"
         onChange={(e) => e.target.files && addFiles(e.target.files)}
       />
-      {/* Input específico para abrir la cámara directamente en móvil */}
       <input
         ref={cameraRef}
         type="file"
@@ -265,17 +319,17 @@ export default function MultiImagePicker({
         disabled={processing}
         className="btn-secondary w-full justify-center text-sm"
       >
-        <Camera className="w-4 h-4" /> Tomar foto con la cámara
+        <Camera className="w-4 h-4" /> Tomar foto con la camara
       </button>
 
-      {/* Añadir por URL */}
+      {/* Anadir por URL */}
       {urlMode ? (
         <div className="flex gap-2">
           <input
             type="url"
             value={urlValue}
             onChange={(e) => setUrlValue(e.target.value)}
-            placeholder="https://…"
+            placeholder="https://..."
             className="input flex-1"
             autoFocus
           />
@@ -289,7 +343,7 @@ export default function MultiImagePicker({
       ) : (
         <button type="button" onClick={() => setUrlMode(true)}
           className="btn-ghost w-full justify-center text-sm">
-          <LinkIcon className="w-4 h-4" /> Añadir imagen por URL
+          <LinkIcon className="w-4 h-4" /> Anadir imagen por URL
         </button>
       )}
 
