@@ -1,14 +1,22 @@
 import { useRef, useState } from 'react'
-import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical, Camera, Sparkles } from 'lucide-react'
+import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical, Camera, Sparkles, Undo2 } from 'lucide-react'
 import { cx } from '@/lib/utils'
 import { compressImage } from '@/lib/imageCompression'
 import { usePrettify } from '@/hooks/usePrettify'
 
-/** Estado de cada imagen en el picker. */
+/**
+ * Estado de cada imagen en el picker.
+ *
+ * `previous` guarda el estado ANTERIOR al retoque (Prettify) para poder
+ * deshacer. Es opcional y solo se rellena cuando se aplica un retoque.
+ * Aunque el tipo es recursivo, en la práctica lo mantenemos a un solo
+ * nivel: si se aplica un segundo retoque, `previous` sigue apuntando al
+ * original de verdad, no al retoque intermedio (ver `prettifyAt`).
+ */
 export type PickerImage =
-  | { kind: 'existing'; id: string; url: string; path: string | null }
-  | { kind: 'new-file'; tempId: string; file: File; preview: string }
-  | { kind: 'new-url'; tempId: string; url: string }
+  | { kind: 'existing'; id: string; url: string; path: string | null; previous?: PickerImage }
+  | { kind: 'new-file'; tempId: string; file: File; preview: string; previous?: PickerImage }
+  | { kind: 'new-url'; tempId: string; url: string; previous?: PickerImage }
 
 export function previewOf(img: PickerImage): string {
   if (img.kind === 'existing') return img.url
@@ -38,7 +46,7 @@ export default function MultiImagePicker({
   const [overIdx, setOverIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
-  const { prettify, error: prettifyError } = usePrettify()
+  const { prettify, progress: prettifyProgress, error: prettifyError } = usePrettify()
 
   async function addFiles(files: FileList | File[]) {
     setError(null)
@@ -73,28 +81,50 @@ export default function MultiImagePicker({
     }
   }
 
-  async function prettifyAt(index: number) {
+  async function prettifyAt(index: number, style: 'studio' | 'cream' | 'transparent' = 'studio') {
     const img = images[index]
     if (!img) return
     setPrettifyingIdx(index)
     setError(null)
     try {
       const source = img.kind === 'new-file' ? img.file : previewOf(img)
-      const result = await prettify(source)
+      const result = await prettify(source, { style })
       const preview = await new Promise<string>((resolve, reject) => {
         const r = new FileReader()
         r.onload = () => resolve(r.result as string)
         r.onerror = reject
         r.readAsDataURL(result)
       })
+
+      // Guardar el estado anterior para poder deshacer.
+      // Si ya había un `previous` (retoques encadenados), lo conservamos
+      // para que "deshacer" vuelva SIEMPRE al original de verdad, no al
+      // retoque intermedio.
+      const previous = img.previous ?? img
+
       const next = [...images]
-      next[index] = { kind: 'new-file', tempId: crypto.randomUUID(), file: result, preview }
+      next[index] = {
+        kind: 'new-file',
+        tempId: crypto.randomUUID(),
+        file: result,
+        preview,
+        previous,
+      }
       onChange(next)
     } catch (e: any) {
-      setError(e?.message ?? 'Error al aplicar Prettify')
+      setError(e?.message ?? 'Error al aplicar el retoque')
     } finally {
       setPrettifyingIdx(null)
     }
+  }
+
+  /** Devuelve la foto al estado anterior al último retoque. */
+  function undoPrettifyAt(index: number) {
+    const img = images[index]
+    if (!img?.previous) return
+    const next = [...images]
+    next[index] = img.previous
+    onChange(next)
   }
 
   function addUrl() {
@@ -210,11 +240,18 @@ export default function MultiImagePicker({
             >
               <img src={previewOf(img)} alt="" className="w-full h-full object-cover pointer-events-none" />
 
-              {/* Overlay mientras se procesa Prettify */}
+              {/* Overlay mientras se procesa el retoque */}
               {isPrettifying && (
-                <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
+                <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex flex-col items-center justify-center gap-1.5">
                   <Loader2 className="w-6 h-6 text-white animate-spin" />
-                  <span className="text-white text-[10px] font-medium">Prettify...</span>
+                  <span className="text-white text-[10px] font-semibold uppercase tracking-wide">
+                    Retocando…
+                  </span>
+                  {prettifyProgress > 0 && prettifyProgress < 1 && (
+                    <span className="text-white/80 text-[10px] tabular-nums">
+                      {Math.round(prettifyProgress * 100)}%
+                    </span>
+                  )}
                 </div>
               )}
 
@@ -233,16 +270,64 @@ export default function MultiImagePicker({
                     <X className="w-3.5 h-3.5" />
                   </button>
 
-                  {/* Boton Prettify (eliminar fondo con IA) */}
-                  <button
-                    type="button"
-                    onClick={() => prettifyAt(i)}
-                    disabled={prettifyingIdx !== null}
-                    className="absolute bottom-1 right-1 p-1 rounded-full bg-brand-700/90 text-white opacity-0 group-hover:opacity-100 hover:bg-brand-600 transition"
-                    title="Prettify: eliminar fondo con IA"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </button>
+                  {/* Botón deshacer retoque (solo si hay estado previo guardado) */}
+                  {img.previous && (
+                    <button
+                      type="button"
+                      onClick={() => undoPrettifyAt(i)}
+                      disabled={prettifyingIdx !== null}
+                      className="absolute bottom-1 left-1 flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full bg-black/70 text-white opacity-0 group-hover:opacity-100 hover:bg-black/85 transition shadow-lift"
+                      title="Deshacer retoque (volver al original)"
+                    >
+                      <Undo2 className="w-3 h-3" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wide">Original</span>
+                    </button>
+                  )}
+
+                  {/* Menú Prettify: acabado estudio / crema / recorte transparente */}
+                  <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition">
+                    <div className="relative group/prettify">
+                      <button
+                        type="button"
+                        onClick={() => prettifyAt(i, 'studio')}
+                        disabled={prettifyingIdx !== null}
+                        className="p-1 rounded-full bg-brand-700/90 text-white hover:bg-brand-600 transition"
+                        title="Retocar como foto de catálogo (fondo blanco)"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </button>
+                      {/* Submenu con opciones de estilo */}
+                      <div className="absolute bottom-full right-0 mb-1 hidden group-hover/prettify:flex flex-col gap-0.5 bg-surface border border-line rounded-lg p-1 shadow-lift whitespace-nowrap z-10 min-w-[128px]">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); prettifyAt(i, 'studio') }}
+                          disabled={prettifyingIdx !== null}
+                          className="text-left text-[11px] px-2 py-1 rounded hover:bg-surface-soft text-ink"
+                        >
+                          <span className="inline-block w-2 h-2 rounded-full bg-white border border-line mr-1.5 align-middle" />
+                          Estudio (blanco)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); prettifyAt(i, 'cream') }}
+                          disabled={prettifyingIdx !== null}
+                          className="text-left text-[11px] px-2 py-1 rounded hover:bg-surface-soft text-ink"
+                        >
+                          <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ background: '#F8F3EE', border: '1px solid #E7DCD3' }} />
+                          Crema (cálido)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); prettifyAt(i, 'transparent') }}
+                          disabled={prettifyingIdx !== null}
+                          className="text-left text-[11px] px-2 py-1 rounded hover:bg-surface-soft text-ink"
+                        >
+                          <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle bg-surface-soft border border-line" style={{ background: 'repeating-linear-gradient(45deg, #eee 0 3px, #ddd 3px 6px)' }} />
+                          Solo recorte (PNG)
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Portada / marcar como portada */}
                   {i === 0 ? (
