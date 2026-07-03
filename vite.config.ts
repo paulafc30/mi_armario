@@ -13,4 +13,7 @@ export default defineConfig({
     port: 5174,
     open: true,
   },
+  optimizeDeps: {
+    exclude: ['@imgly/background-removal', 'onnxruntime-web'],
+  },
 })

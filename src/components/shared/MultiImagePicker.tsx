@@ -81,10 +81,6 @@ export default function MultiImagePicker({
     try {
       const source = img.kind === 'new-file' ? img.file : previewOf(img)
       const result = await prettify(source)
-      if (!result) {
-        setError(prettifyError ?? 'No se pudo eliminar el fondo. Prueba con otra foto.')
-        return
-      }
       const preview = await new Promise<string>((resolve, reject) => {
         const r = new FileReader()
         r.onload = () => resolve(r.result as string)
