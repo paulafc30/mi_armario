@@ -18,8 +18,8 @@ export function usePrettify() {
       const { removeBackground } = await import('@imgly/background-removal')
 
       const config = {
-        // Usar modelos desde el CDN de imgly (evita incluirlos en el build)
-        publicPath: 'https://staticimgly.com/@imgly/background-removal/1.7.0/dist/',
+        // jsDelivr sirve cualquier paquete npm directamente sin CORS
+        publicPath: 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/',
         model: 'isnet' as const,
         output: { format: 'image/png' as const, quality: 1 },
       }
@@ -29,7 +29,9 @@ export function usePrettify() {
       setStatus('done')
       return file
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error al procesar la imagen'
+      const msg = err instanceof Error
+        ? `${err.message}${err.cause ? ` (${err.cause})` : ''}`
+        : String(err)
       setError(msg)
       setStatus('error')
       return null

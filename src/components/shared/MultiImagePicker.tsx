@@ -38,7 +38,7 @@ export default function MultiImagePicker({
   const [overIdx, setOverIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
-  const { prettify } = usePrettify()
+  const { prettify, error: prettifyError } = usePrettify()
 
   async function addFiles(files: FileList | File[]) {
     setError(null)
@@ -82,7 +82,7 @@ export default function MultiImagePicker({
       const source = img.kind === 'new-file' ? img.file : previewOf(img)
       const result = await prettify(source)
       if (!result) {
-        setError('No se pudo eliminar el fondo. Prueba con otra foto.')
+        setError(prettifyError ?? 'No se pudo eliminar el fondo. Prueba con otra foto.')
         return
       }
       const preview = await new Promise<string>((resolve, reject) => {

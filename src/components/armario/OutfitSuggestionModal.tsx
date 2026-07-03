@@ -62,7 +62,11 @@ export default function OutfitSuggestionModal({ onClose }: { onClose: () => void
   const handleSuggest = () => suggest(selectedOccasion)
 
   return (
-    <div className="card p-4 space-y-4">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+    <div className="card p-6 space-y-4 w-full max-w-lg max-h-[90vh] overflow-y-auto">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-ink flex items-center gap-1.5">
           <Sparkles className="w-4 h-4 text-brand-700" />
@@ -136,6 +140,7 @@ export default function OutfitSuggestionModal({ onClose }: { onClose: () => void
           </button>
         </div>
       )}
+    </div>
     </div>
   )
 }

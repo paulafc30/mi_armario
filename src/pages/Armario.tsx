@@ -89,19 +89,19 @@ export default function Armario() {
             </button>
           )}
           {tab === 'prendas' && (
+            <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
+              <Plus className="w-4 h-4" /> Añadir
+            </button>
+          )}
+          {tab === 'outfits' && (
             <>
               <button onClick={() => setOutfitSuggestOpen(true)} className="btn-secondary" title="Sugerir outfit con IA">
                 <Sparkles className="w-4 h-4" />
               </button>
-              <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
-                <Plus className="w-4 h-4" /> Añadir
+              <button onClick={() => { setOutfitEditing(null); setOutfitFormOpen(true) }} className="btn-primary">
+                <Plus className="w-4 h-4" /> Outfit
               </button>
             </>
-          )}
-          {tab === 'outfits' && (
-            <button onClick={() => { setOutfitEditing(null); setOutfitFormOpen(true) }} className="btn-primary">
-              <Plus className="w-4 h-4" /> Outfit
-            </button>
           )}
         </div>
       </div>
