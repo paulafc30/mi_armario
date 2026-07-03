@@ -30,9 +30,7 @@ export function usePrettify() {
       setStatus('done')
       return file
     } catch (err) {
-      const msg = err instanceof Error
-        ? `${err.message}${err.cause ? ` — ${err.cause}` : ''}`
-        : String(err)
+      const msg = err instanceof Error ? err.message : String(err)
       setError(msg)
       setStatus('error')
       throw new Error(msg)
