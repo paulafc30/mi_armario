@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { consumeSharedPayload } from '@/lib/sharedItem'
 import type { ClothePrefill } from '@/components/armario/ClotheForm'
-import { Plus, Settings2, Folder, Calendar as CalendarIcon, Shirt } from 'lucide-react'
+import { Plus, Settings2, Folder, Calendar as CalendarIcon, Shirt, Sparkles } from 'lucide-react'
 import EmptyState from '@/components/shared/EmptyState'
 import PlannedTodayBanner from '@/components/armario/PlannedTodayBanner'
 import { useClothes } from '@/hooks/useClothes'
@@ -14,6 +14,7 @@ import ClotheDetail from '@/components/armario/ClotheDetail'
 import CategoryManager from '@/components/armario/CategoryManager'
 import OutfitForm from '@/components/armario/OutfitForm'
 import CalendarTab from '@/components/calendario/CalendarTab'
+import OutfitSuggestionModal from '@/components/armario/OutfitSuggestionModal'
 import type { Clothe } from '@/types/database'
 import { cx } from '@/lib/utils'
 
@@ -51,6 +52,7 @@ export default function Armario() {
   const [catModal, setCatModal] = useState(false)
   const [outfitFormOpen, setOutfitFormOpen] = useState(false)
   const [outfitEditing, setOutfitEditing] = useState<OutfitWithItems | null>(null)
+  const [outfitSuggestOpen, setOutfitSuggestOpen] = useState(false)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -87,9 +89,14 @@ export default function Armario() {
             </button>
           )}
           {tab === 'prendas' && (
-            <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
-              <Plus className="w-4 h-4" /> Añadir
-            </button>
+            <>
+              <button onClick={() => setOutfitSuggestOpen(true)} className="btn-secondary" title="Sugerir outfit con IA">
+                <Sparkles className="w-4 h-4" />
+              </button>
+              <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
+                <Plus className="w-4 h-4" /> Añadir
+              </button>
+            </>
           )}
           {tab === 'outfits' && (
             <button onClick={() => { setOutfitEditing(null); setOutfitFormOpen(true) }} className="btn-primary">
@@ -203,6 +210,10 @@ export default function Armario() {
             })}
           </div>
         )
+      )}
+
+      {outfitSuggestOpen && (
+        <OutfitSuggestionModal onClose={() => setOutfitSuggestOpen(false)} />
       )}
 
       <ClotheForm
