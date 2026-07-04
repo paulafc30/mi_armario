@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { consumeSharedPayload } from '@/lib/sharedItem'
 import type { ClothePrefill } from '@/components/armario/ClotheForm'
-import { Plus, Settings2, Folder, Calendar as CalendarIcon, Shirt, Sparkles } from 'lucide-react'
+import { Plus, Settings2, Folder, Calendar as CalendarIcon, Shirt, Sparkles, Leaf } from 'lucide-react'
 import EmptyState from '@/components/shared/EmptyState'
 import PlannedTodayBanner from '@/components/armario/PlannedTodayBanner'
 import { useClothes } from '@/hooks/useClothes'
@@ -14,11 +14,12 @@ import ClotheDetail from '@/components/armario/ClotheDetail'
 import CategoryManager from '@/components/armario/CategoryManager'
 import OutfitForm from '@/components/armario/OutfitForm'
 import CalendarTab from '@/components/calendario/CalendarTab'
+import SeasonTab from '@/components/armario/SeasonTab'
 import OutfitSuggestionModal from '@/components/armario/OutfitSuggestionModal'
 import type { Clothe } from '@/types/database'
 import { cx } from '@/lib/utils'
 
-type Tab = 'prendas' | 'outfits' | 'calendario'
+type Tab = 'prendas' | 'outfits' | 'calendario' | 'temporada'
 
 export default function Armario() {
   const [tab, setTab] = useState<Tab>('prendas')
@@ -106,13 +107,14 @@ export default function Armario() {
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-line">
-        {(['prendas', 'outfits', 'calendario'] as Tab[]).map((t) => (
+      <div className="flex gap-2 border-b border-line overflow-x-auto no-scrollbar">
+        {(['prendas', 'outfits', 'temporada', 'calendario'] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
-            className={cx('px-3 py-2 text-sm font-medium border-b-2 -mb-[1px] flex items-center gap-1.5',
+            className={cx('px-3 py-2 text-sm font-medium border-b-2 -mb-[1px] flex items-center gap-1.5 whitespace-nowrap shrink-0',
               tab === t ? 'border-brand-700 text-brand-700' : 'border-transparent text-muted')}>
             {t === 'calendario' && <CalendarIcon className="w-3.5 h-3.5" />}
-            {t === 'prendas' ? 'Prendas' : t === 'outfits' ? 'Outfits' : 'Calendario'}
+            {t === 'temporada' && <Leaf className="w-3.5 h-3.5" />}
+            {t === 'prendas' ? 'Prendas' : t === 'outfits' ? 'Outfits' : t === 'temporada' ? 'Temporada' : 'Calendario'}
           </button>
         ))}
       </div>
@@ -170,6 +172,7 @@ export default function Armario() {
       )}
 
       {tab === 'calendario' && <CalendarTab />}
+      {tab === 'temporada' && <SeasonTab />}
 
       {tab === 'outfits' && (
         outfits.length === 0 ? (

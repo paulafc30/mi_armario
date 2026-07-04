@@ -35,6 +35,17 @@ export interface Category {
   created_at: string
 }
 
+export interface Season {
+  id: string
+  user_id: string | null  // null = global
+  name: string
+  icon: string
+  color: string
+  is_global: boolean
+  sort_order: number
+  created_at: string
+}
+
 export interface Clothe {
   id: string
   user_id: string

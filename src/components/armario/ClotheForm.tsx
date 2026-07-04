@@ -5,13 +5,14 @@ import ColorPicker, { colorHexByName } from '@/components/shared/ColorPicker'
 import Combobox from '@/components/shared/Combobox'
 import DescriptionModal from '@/components/venta/DescriptionModal'
 import { useCategories } from '@/hooks/useCategories'
+import { useSeasons, useClotheSeasonIds, useSetClotheSeasons } from '@/hooks/useSeasons'
 import { useBrands } from '@/hooks/useBrands'
 import { useCreateClothe, useDeleteClothe, useUpdateClothe } from '@/hooks/useClothes'
 import { uploadImage, deleteImage } from '@/lib/images'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { SIZE_OPTIONS, MATERIAL_OPTIONS } from '@/lib/options'
-import { fetchUrlPreview } from '@/lib/utils'
+import { fetchUrlPreview, cx } from '@/lib/utils'
 import { isImageUrl } from '@/lib/sharedItem'
 import { useConfirm } from '@/components/shared/ConfirmModal'
 import { extractDominantColorName } from '@/lib/colorExtraction'
@@ -44,6 +45,9 @@ export default function ClotheForm({
 }) {
   const { user } = useAuth()
   const { data: categories = [] } = useCategories()
+  const { data: seasons = [] } = useSeasons()
+  const { data: existingSeasonIds = [] } = useClotheSeasonIds(clothe?.id)
+  const setClotheSeasonsM = useSetClotheSeasons()
   const { data: brandSuggestions = [] } = useBrands()
   const createMut = useCreateClothe()
   const updateMut = useUpdateClothe()
@@ -52,6 +56,7 @@ export default function ClotheForm({
 
   const [name, setName] = useState('')
   const [categoryId, setCategoryId] = useState<string>('')
+  const [selectedSeasonIds, setSelectedSeasonIds] = useState<string[]>([])
   const [brand, setBrand] = useState('')
   const [size, setSize] = useState('')
   const [colors, setColors] = useState<string[]>([])
@@ -73,6 +78,7 @@ export default function ClotheForm({
     if (clothe) {
       setName(clothe.name)
       setCategoryId(clothe.category_id ?? '')
+      setSelectedSeasonIds(existingSeasonIds)
       setBrand(clothe.brand ?? '')
       setSize(clothe.size ?? '')
       setColors(clothe.colors ?? (clothe.color ? [clothe.color] : []))
@@ -93,7 +99,7 @@ export default function ClotheForm({
         })
     } else {
       setName(prefill?.name ?? '')
-      setCategoryId(''); setBrand(''); setSize(''); setColors([]); setMaterial('')
+      setCategoryId(''); setSelectedSeasonIds([]); setBrand(''); setSize(''); setColors([]); setMaterial('')
       setTags('')
       setNotes(prefill?.notes ?? '')
       setPrice(prefill?.price != null ? String(prefill.price) : '')
@@ -167,7 +173,7 @@ export default function ClotheForm({
     created_at: clothe?.created_at ?? new Date().toISOString(),
     updated_at: clothe?.updated_at ?? new Date().toISOString(),
     listed_at: clothe?.listed_at ?? null,
-  }), [clothe, user, name, categoryId, brand, size, colors, material, tags, notes, price, defaultStatus]) 
+  }), [clothe, user, name, categoryId, brand, size, colors, material, tags, notes, price, defaultStatus])
 
   async function syncImages(clotheId: string, userId: string) {
     const stillThere = new Set(
@@ -235,6 +241,7 @@ export default function ClotheForm({
       }
 
       await syncImages(clotheId, user.id)
+      await setClotheSeasonsM.mutateAsync({ clotheId, seasonIds: selectedSeasonIds })
       onClose()
     } catch (err: any) {
       setError(err.message ?? 'Error al guardar')
@@ -286,6 +293,36 @@ export default function ClotheForm({
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="label">Temporada <span className="text-muted font-normal text-xs">(puedes seleccionar varias)</span></label>
+          <div className="flex flex-wrap gap-2 mt-1">
+            {seasons.map((s) => {
+              const active = selectedSeasonIds.includes(s.id)
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => setSelectedSeasonIds(
+                    active
+                      ? selectedSeasonIds.filter((id) => id !== s.id)
+                      : [...selectedSeasonIds, s.id]
+                  )}
+                  className={cx(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border-2 transition',
+                    active
+                      ? 'border-transparent text-white'
+                      : 'border-line bg-surface text-muted hover:text-ink hover:border-muted/40'
+                  )}
+                  style={active ? { backgroundColor: s.color } : undefined}
+                >
+                  <span>{s.icon}</span>
+                  {s.name}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -349,7 +386,8 @@ export default function ClotheForm({
 
         <div>
           <label className="label">Precio (opcional)</label>
-          <input className="input" type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="20.00" />
+          <label className="label">Precio (opcional)</label>
+          <input className="input" type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="20.00" />
         </div>
 
         <div>
@@ -359,27 +397,38 @@ export default function ClotheForm({
               type="button"
               onClick={() => setDescOpen(true)}
               disabled={!name.trim()}
-              className="text-xs font-semibold text-brand-700 hover:text-brand-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-              title="Generar ficha del producto"
+              className="btn-ghost text-xs py-0.5 px-2 gap-1"
+              title="Generar descripcion con IA"
             >
-              <Sparkles className="w-3.5 h-3.5" /> Generar ficha
+              <Wand2 className="w-3 h-3" /> Generar con IA
             </button>
           </div>
-          <textarea className="input min-h-[80px]" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <p className="text-xs text-muted mt-1">Notas internas: cómo te queda, dónde la compraste, recuerdos…</p>
+          <textarea
+            className="input resize-none"
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notas sobre la prenda..."
+          />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="text-xs text-red-500 bg-red-50 dark:bg-red-500/10 rounded-xl px-3 py-2">{error}</p>
+        )}
 
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-3 pt-1">
           {clothe && (
-            <button type="button" onClick={handleDelete} className="btn-danger">
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={submitting}
+              className="btn-secondary text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10"
+            >
               <Trash2 className="w-4 h-4" />
             </button>
           )}
-          <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancelar</button>
-          <button type="submit" disabled={submitting} className="btn-primary flex-1">
-            {submitting ? 'Guardando…' : 'Guardar'}
+          <button type="submit" disabled={submitting || !name.trim()} className="btn-primary flex-1 justify-center">
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : clothe ? 'Guardar cambios' : 'Anadir prenda'}
           </button>
         </div>
       </form>
