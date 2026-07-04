@@ -13,6 +13,29 @@ const OCCASIONS: Record<string, string> = {
   evento: 'evento especial o celebracion',
 }
 
+// Clasifica el nombre de una categoria en un tipo de prenda
+function classifyCategory(name: string): string {
+  const n = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  if (/bikini|banador|bano|swimwear/.test(n)) return 'swimwear'
+  if (/vestido|mono|jumpsuit|overall|enterizo/.test(n)) return 'fullbody'
+  if (/abrigo|chaqueta|cazadora|blazer|cardigan|jersey|sudadera|hoodie|anorak/.test(n)) return 'outerwear'
+  if (/camiseta|top|blusa|camisa|body|tirante|crop/.test(n)) return 'top'
+  if (/pantalon|falda|short|jean|vaquero|leggin|culot/.test(n)) return 'bottom'
+  if (/zapato|zapatilla|bota|sandalia|tacón|tacon|calzado/.test(n)) return 'footwear'
+  if (/accesorio|bolso|cinturon|bufanda|gorro|joya|collar|pendiente|pulsera|reloj|sombrero|gafas/.test(n)) return 'accessory'
+  if (/deporte|gym|sport|running|yoga/.test(n)) return 'sportswear'
+  return 'other'
+}
+
+// Temperatura en C -> descripcion de temporada
+function tempToSeason(tempC: number): string {
+  if (tempC >= 28) return 'calor intenso (verano, ropa ligera, sin capas)'
+  if (tempC >= 20) return 'calor moderado (primavera/verano, ropa ligera)'
+  if (tempC >= 12) return 'fresco (otono/primavera, puede necesitar chaqueta)'
+  if (tempC >= 5) return 'frio (otono/invierno, necesita capas y abrigo)'
+  return 'frio intenso (invierno, abrigo obligatorio)'
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
@@ -29,13 +52,24 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
     if (authError || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
 
-    // Fetch armario (excluir prendas en venta, vendidas y archivadas)
+    // Fetch categorias del usuario
+    const { data: categories } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('user_id', user.id)
+
+    const catMap: Record<string, { name: string; type: string }> = {}
+    for (const cat of categories ?? []) {
+      catMap[cat.id] = { name: cat.name, type: classifyCategory(cat.name) }
+    }
+
+    // Fetch armario
     const { data: clothes, error: dbError } = await supabase
       .from('clothes')
       .select('id, name, brand, category_id, colors, tags, size, image_url')
       .eq('user_id', user.id)
       .not('status', 'in', '("en_venta","vendida","archivada")')
-      .limit(120)
+      .limit(150)
 
     if (dbError) throw new Error(dbError.message)
     if (!clothes || clothes.length < 3) {
@@ -45,39 +79,90 @@ Deno.serve(async (req: Request) => {
       )
     }
 
-    // Clima via Open-Meteo (gratis, sin API key)
+    // Clima
     let weatherDesc = 'clima desconocido'
+    let tempC: number | null = null
     if (lat && lon) {
       try {
         const wRes = await fetch(
           `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&timezone=auto`
         )
         const wData = await wRes.json()
-        const tempC = Math.round(wData.current?.temperature_2m)
+        tempC = Math.round(wData.current?.temperature_2m)
         const wLabel = weatherCodeToLabel(wData.current?.weathercode)
-        weatherDesc = `${tempC}C, ${wLabel}`
+        weatherDesc = `${tempC}C, ${wLabel}, ${tempToSeason(tempC!)}`
       } catch { /* opcional */ }
     }
 
-    const inventory = clothes.map((c) => ({
-      id: c.id,
-      nombre: c.name,
-      marca: c.brand || null,
-      colores: c.colors || [],
-      talla: c.size || null,
-    }))
+    // Construir inventario enriquecido con tipo de prenda
+    const inventory = clothes.map((c) => {
+      const cat = c.category_id ? catMap[c.category_id] : null
+      return {
+        id: c.id,
+        nombre: c.name,
+        marca: c.brand || null,
+        colores: (c.colors || []).join(', ') || null,
+        tags: (c.tags || []).join(', ') || null,
+        categoria: cat?.name || null,
+        tipo: cat?.type || 'other',  // top | bottom | fullbody | outerwear | footwear | accessory | sportswear | swimwear | other
+      }
+    })
+
+    // Filtrar prendas incompatibles con la ocasion o la temperatura
+    const gymTypes = ['sportswear']
+    const swimTypes = ['swimwear']
+
+    const availableItems = inventory.filter((item) => {
+      if (occasion === 'gym') return gymTypes.includes(item.tipo) || item.tipo === 'footwear' || item.tipo === 'accessory' || item.tipo === 'other'
+      // Para ocasiones no-gym, excluir ropa de deporte y swimwear
+      if (gymTypes.includes(item.tipo)) return false
+      if (swimTypes.includes(item.tipo)) return false
+      return true
+    })
+
+    if (availableItems.length < 3) {
+      return new Response(
+        JSON.stringify({ error: 'No hay suficientes prendas disponibles para esta ocasion.' }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
 
     const occasionLabel = OCCASIONS[occasion] || occasion
+    const isGym = occasion === 'gym'
 
-    const prompt = `Eres un estilista personal. El usuario tiene este armario (JSON):
-${JSON.stringify(inventory)}
+    const structureRule = isGym
+      ? 'Cada outfit de gym DEBE incluir: 1 prenda deportiva (tipo sportswear) + opcionalmente calzado deportivo. NO incluyas prendas de tipo top/bottom normales ni accesorios innecesarios.'
+      : `Cada outfit DEBE incluir:
+- O bien 1 prenda "top" + 1 prenda "bottom"
+- O bien 1 prenda "fullbody" (vestido, mono, jumpsuit)
+- Opcionalmente: 1 prenda "outerwear" si el clima lo requiere
+- Opcionalmente: 1 "footwear" y/o 1 "accessory" (maximo 1 de cada)
+PROHIBIDO: combinar "swimwear" con cualquier otra categoria. PROHIBIDO: poner solo accesorios sin top+bottom o fullbody. PROHIBIDO: outfit sin parte de abajo (bottom o fullbody).`
 
-Condiciones: ocasion=${occasionLabel}, clima=${weatherDesc}
+    const tempRule = tempC !== null
+      ? `Temperatura actual: ${tempC}C. ${tempToSeason(tempC)}. Adapta la eleccion de prendas al clima (${tempC < 15 ? 'prioriza outerwear y capas' : tempC > 25 ? 'evita outerwear, prioriza ropa ligera' : 'capas opcionales'}).`
+      : ''
 
-Sugiere exactamente 3 outfits usando SOLO IDs de prendas de la lista. Cada outfit: 3-5 prendas. Responde UNICAMENTE con JSON valido, sin texto extra:
-[{"name":"nombre creativo","item_ids":["uuid1","uuid2","uuid3"],"reason":"explicacion max 50 palabras"}]`
+    const prompt = `Eres un estilista personal experto en moda. El usuario tiene este armario (JSON con id, nombre, tipo de prenda, colores, categoria):
+${JSON.stringify(availableItems)}
 
-    // Llamada a Groq API (OpenAI-compatible)
+OCASION: ${occasionLabel}
+CLIMA: ${weatherDesc}
+${tempRule}
+
+REGLAS OBLIGATORIAS DE ESTRUCTURA:
+${structureRule}
+
+OTRAS REGLAS:
+- Usa SOLO IDs de prendas de la lista proporcionada
+- 3-5 prendas por outfit maximo
+- Los 3 outfits deben ser distintos entre si (no repitas las mismas prendas en todos)
+- Combina colores de forma armoniosa
+- El "reason" explica brevemente por que combina bien y es apropiado para la ocasion y clima (max 60 palabras)
+
+Responde UNICAMENTE con JSON valido, sin texto extra ni markdown:
+[{"name":"nombre creativo del look","item_ids":["uuid1","uuid2","uuid3"],"reason":"explicacion"}]`
+
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -86,9 +171,15 @@ Sugiere exactamente 3 outfits usando SOLO IDs de prendas de la lista. Cada outfi
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 1024,
-        temperature: 0.7,
+        messages: [
+          {
+            role: 'system',
+            content: 'Eres un estilista de moda. Respondes SOLO con JSON valido, sin texto extra, sin bloques de codigo markdown.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 1200,
+        temperature: 0.6,
       }),
     })
 
@@ -104,14 +195,35 @@ Sugiere exactamente 3 outfits usando SOLO IDs de prendas de la lista. Cada outfi
     if (!jsonMatch) throw new Error('La IA no devolvio JSON valido')
     const outfits = JSON.parse(jsonMatch[0])
 
-    // Enriquecer con datos reales de las prendas
+    // Validacion basica: rechazar outfits sin top+bottom o fullbody (salvo gym)
     const clothesMap = Object.fromEntries(clothes.map((c) => [c.id, c]))
-    const enriched = outfits.map((outfit: any) => ({
-      name: outfit.name,
-      reason: outfit.reason,
-      items: (outfit.item_ids || []).map((id: string) => clothesMap[id]).filter(Boolean),
-      weather: weatherDesc,
-    }))
+    const enriched = outfits
+      .filter((outfit: any) => {
+        if (!Array.isArray(outfit.item_ids) || outfit.item_ids.length < 2) return false
+        if (isGym) return true
+        const types = outfit.item_ids
+          .map((id: string) => {
+            const c = clothesMap[id]
+            return c?.category_id ? catMap[c.category_id]?.type : 'other'
+          })
+        const hasBottom = types.includes('bottom')
+        const hasFullbody = types.includes('fullbody')
+        const hasTop = types.includes('top')
+        return hasFullbody || (hasTop && hasBottom)
+      })
+      .map((outfit: any) => ({
+        name: outfit.name,
+        reason: outfit.reason,
+        items: (outfit.item_ids || []).map((id: string) => clothesMap[id]).filter(Boolean),
+        weather: weatherDesc,
+      }))
+
+    if (enriched.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'La IA no genero outfits validos. Intenta de nuevo.' }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
 
     return new Response(JSON.stringify({ outfits: enriched }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
