@@ -44,6 +44,7 @@ export default function MultiImagePicker({
   // Drag-reorder interno entre miniaturas
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
+  const [prettifyMenuIdx, setPrettifyMenuIdx] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
   const { prettify, progress: prettifyProgress, error: prettifyError } = usePrettify()
@@ -215,6 +216,7 @@ export default function MultiImagePicker({
         onDragOver={handleGridDragOver}
         onDragLeave={handleGridDragLeave}
         onDrop={handleGridDrop}
+        onClick={(e) => { if ((e.target as HTMLElement).closest('[data-prettify-menu]') === null) setPrettifyMenuIdx(null) }}
         className={cx(
           'grid grid-cols-3 gap-2 p-2 rounded-2xl transition border-2 border-dashed',
           filesDragging ? 'border-brand-600 bg-brand-soft' : 'border-transparent'
@@ -255,79 +257,15 @@ export default function MultiImagePicker({
                 </div>
               )}
 
-              {/* Controles (visibles en hover si no está procesando) */}
+              {/* Controles siempre visibles (mobile-first) */}
               {!isPrettifying && (
                 <>
-                  {/* Indicador de arrastre */}
-                  <div className="absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition pointer-events-none flex items-end justify-center pb-0.5">
-                    <GripVertical className="w-3.5 h-3.5 text-white/90 rotate-90" />
-                  </div>
-
                   {/* Boton eliminar */}
                   <button type="button" onClick={() => removeAt(i)}
-                    className="absolute top-1 right-1 p-1 rounded-full bg-black/60 text-white opacity-80 hover:opacity-100 hover:bg-black/80 transition"
+                    className="absolute top-1 right-1 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition"
                     title="Quitar">
                     <X className="w-3.5 h-3.5" />
                   </button>
-
-                  {/* Botón deshacer retoque (solo si hay estado previo guardado) */}
-                  {img.previous && (
-                    <button
-                      type="button"
-                      onClick={() => undoPrettifyAt(i)}
-                      disabled={prettifyingIdx !== null}
-                      className="absolute bottom-1 left-1 flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full bg-black/70 text-white opacity-0 group-hover:opacity-100 hover:bg-black/85 transition shadow-lift"
-                      title="Deshacer retoque (volver al original)"
-                    >
-                      <Undo2 className="w-3 h-3" />
-                      <span className="text-[9px] font-semibold uppercase tracking-wide">Original</span>
-                    </button>
-                  )}
-
-                  {/* Menú Prettify: acabado estudio / crema / recorte transparente */}
-                  <div className="absolute bottom-1 right-1 opacity-0 group-hover:opacity-100 transition">
-                    <div className="relative group/prettify">
-                      <button
-                        type="button"
-                        onClick={() => prettifyAt(i, 'studio')}
-                        disabled={prettifyingIdx !== null}
-                        className="p-1 rounded-full bg-brand-700/90 text-white hover:bg-brand-600 transition"
-                        title="Retocar como foto de catálogo (fondo blanco)"
-                      >
-                        <Sparkles className="w-3.5 h-3.5" />
-                      </button>
-                      {/* Submenu con opciones de estilo */}
-                      <div className="absolute bottom-full right-0 mb-1 hidden group-hover/prettify:flex flex-col gap-0.5 bg-surface border border-line rounded-lg p-1 shadow-lift whitespace-nowrap z-10 min-w-[128px]">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); prettifyAt(i, 'studio') }}
-                          disabled={prettifyingIdx !== null}
-                          className="text-left text-[11px] px-2 py-1 rounded hover:bg-surface-soft text-ink"
-                        >
-                          <span className="inline-block w-2 h-2 rounded-full bg-white border border-line mr-1.5 align-middle" />
-                          Estudio (blanco)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); prettifyAt(i, 'cream') }}
-                          disabled={prettifyingIdx !== null}
-                          className="text-left text-[11px] px-2 py-1 rounded hover:bg-surface-soft text-ink"
-                        >
-                          <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle" style={{ background: '#F8F3EE', border: '1px solid #E7DCD3' }} />
-                          Crema (cálido)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); prettifyAt(i, 'transparent') }}
-                          disabled={prettifyingIdx !== null}
-                          className="text-left text-[11px] px-2 py-1 rounded hover:bg-surface-soft text-ink"
-                        >
-                          <span className="inline-block w-2 h-2 rounded-full mr-1.5 align-middle bg-surface-soft border border-line" style={{ background: 'repeating-linear-gradient(45deg, #eee 0 3px, #ddd 3px 6px)' }} />
-                          Solo recorte (PNG)
-                        </button>
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Portada / marcar como portada */}
                   {i === 0 ? (
@@ -336,11 +274,58 @@ export default function MultiImagePicker({
                     </div>
                   ) : (
                     <button type="button" onClick={() => setCover(i)}
-                      className="absolute top-1 left-1 p-1 rounded-full bg-black/40 text-white opacity-0 group-hover:opacity-100 hover:bg-black/70 transition"
+                      className="absolute top-1 left-1 p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition"
                       title="Marcar como portada">
                       <Star className="w-3.5 h-3.5" />
                     </button>
                   )}
+
+                  {/* Botón deshacer retoque */}
+                  {img.previous && (
+                    <button
+                      type="button"
+                      onClick={() => undoPrettifyAt(i)}
+                      disabled={prettifyingIdx !== null}
+                      className="absolute bottom-1 left-1 flex items-center gap-1 pl-1.5 pr-2 py-1 rounded-full bg-black/70 text-white hover:bg-black/85 transition shadow-lift"
+                      title="Volver al original"
+                    >
+                      <Undo2 className="w-3 h-3" />
+                      <span className="text-[9px] font-semibold uppercase tracking-wide">Original</span>
+                    </button>
+                  )}
+
+                  {/* Botón Prettify + submenú controlado por estado */}
+                  <div className="absolute bottom-1 right-1" data-prettify-menu="true">
+                    <button
+                      type="button"
+                      onClick={() => setPrettifyMenuIdx(prettifyMenuIdx === i ? null : i)}
+                      disabled={prettifyingIdx !== null}
+                      className="p-1.5 rounded-full bg-brand-700/90 text-white hover:bg-brand-600 transition"
+                      title="Retocar foto"
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                    </button>
+                    {prettifyMenuIdx === i && (
+                      <div className="absolute bottom-full right-0 mb-1 flex flex-col gap-0.5 bg-surface border border-line rounded-lg p-1 shadow-lift whitespace-nowrap z-10 min-w-[136px]">
+                        {([
+                          { style: 'studio', label: 'Estudio (blanco)', dot: { background: '#fff', border: '1px solid #ccc' } },
+                          { style: 'cream', label: 'Crema (cálido)', dot: { background: '#F8F3EE', border: '1px solid #E7DCD3' } },
+                          { style: 'transparent', label: 'Solo recorte (PNG)', dot: { background: 'repeating-linear-gradient(45deg,#ddd 0 3px,#f5f5f5 3px 6px)', border: '1px solid #ccc' } },
+                        ] as const).map(({ style, label, dot }) => (
+                          <button
+                            key={style}
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setPrettifyMenuIdx(null); prettifyAt(i, style) }}
+                            disabled={prettifyingIdx !== null}
+                            className="text-left text-[11px] px-2 py-1.5 rounded hover:bg-surface-soft text-ink flex items-center gap-1.5"
+                          >
+                            <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={dot} />
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
