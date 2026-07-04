@@ -386,7 +386,6 @@ export default function ClotheForm({
 
         <div>
           <label className="label">Precio (opcional)</label>
-          <label className="label">Precio (opcional)</label>
           <input className="input" type="number" step="0.01" min="0" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="20.00" />
         </div>
 
