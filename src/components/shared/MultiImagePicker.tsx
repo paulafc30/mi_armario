@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical, Camera, Sparkles, Undo2 } from 'lucide-react'
 import { cx } from '@/lib/utils'
 import { compressImage } from '@/lib/imageCompression'
@@ -45,6 +46,14 @@ export default function MultiImagePicker({
   const [draggingIdx, setDraggingIdx] = useState<number | null>(null)
   const [overIdx, setOverIdx] = useState<number | null>(null)
   const [prettifyMenuIdx, setPrettifyMenuIdx] = useState<number | null>(null)
+  const [prettifyMenuPos, setPrettifyMenuPos] = useState<{ top: number; right: number } | null>(null)
+
+  function openPrettifyMenu(idx: number, e: React.MouseEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setPrettifyMenuIdx(idx)
+    setPrettifyMenuPos({ top: rect.bottom + 6, right: window.innerWidth - rect.right })
+  }
+  function closePrettifyMenu() { setPrettifyMenuIdx(null); setPrettifyMenuPos(null) }
   const inputRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
   const { prettify, progress: prettifyProgress, error: prettifyError } = usePrettify()
@@ -216,7 +225,6 @@ export default function MultiImagePicker({
         onDragOver={handleGridDragOver}
         onDragLeave={handleGridDragLeave}
         onDrop={handleGridDrop}
-        onClick={(e) => { if ((e.target as HTMLElement).closest('[data-prettify-menu]') === null) setPrettifyMenuIdx(null) }}
         className={cx(
           'grid grid-cols-3 gap-2 p-2 rounded-2xl transition border-2 border-dashed',
           filesDragging ? 'border-brand-600 bg-brand-soft' : 'border-transparent'
@@ -294,37 +302,17 @@ export default function MultiImagePicker({
                     </button>
                   )}
 
-                  {/* Botón Prettify + submenú controlado por estado */}
-                  <div className="absolute bottom-1 right-1" data-prettify-menu="true">
+                  {/* Botón Prettify — abre portal para evitar overflow-hidden */}
+                  <div className="absolute bottom-1 right-1">
                     <button
                       type="button"
-                      onClick={() => setPrettifyMenuIdx(prettifyMenuIdx === i ? null : i)}
+                      onClick={(e) => prettifyMenuIdx === i ? closePrettifyMenu() : openPrettifyMenu(i, e)}
                       disabled={prettifyingIdx !== null}
                       className="p-1.5 rounded-full bg-brand-700/90 text-white hover:bg-brand-600 transition"
                       title="Retocar foto"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
                     </button>
-                    {prettifyMenuIdx === i && (
-                      <div className="absolute bottom-full right-0 mb-1 flex flex-col gap-0.5 bg-surface border border-line rounded-lg p-1 shadow-lift whitespace-nowrap z-10 min-w-[136px]">
-                        {([
-                          { style: 'studio', label: 'Estudio (blanco)', dot: { background: '#fff', border: '1px solid #ccc' } },
-                          { style: 'cream', label: 'Crema (cálido)', dot: { background: '#F8F3EE', border: '1px solid #E7DCD3' } },
-                          { style: 'transparent', label: 'Solo recorte (PNG)', dot: { background: 'repeating-linear-gradient(45deg,#ddd 0 3px,#f5f5f5 3px 6px)', border: '1px solid #ccc' } },
-                        ] as const).map(({ style, label, dot }) => (
-                          <button
-                            key={style}
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setPrettifyMenuIdx(null); prettifyAt(i, style) }}
-                            disabled={prettifyingIdx !== null}
-                            className="text-left text-[11px] px-2 py-1.5 rounded hover:bg-surface-soft text-ink flex items-center gap-1.5"
-                          >
-                            <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={dot} />
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </>
               )}
@@ -419,6 +407,36 @@ export default function MultiImagePicker({
         <p className="text-xs text-muted text-center">
           La primera es la portada. Arrastra para reordenar o usa la estrella para cambiarla.
         </p>
+      )}
+
+      {/* Portal del menú Prettify — fuera de overflow-hidden */}
+      {prettifyMenuIdx !== null && prettifyMenuPos && createPortal(
+        <>
+          {/* Backdrop transparente para cerrar al tocar fuera */}
+          <div className="fixed inset-0 z-[998]" onClick={closePrettifyMenu} />
+          <div
+            style={{ position: 'fixed', top: prettifyMenuPos.top, right: prettifyMenuPos.right, zIndex: 999 }}
+            className="flex flex-col gap-0.5 bg-surface border border-line rounded-xl p-1.5 shadow-lift whitespace-nowrap min-w-[148px]"
+          >
+            {([
+              { style: 'studio' as const, label: 'Estudio (blanco)', dot: { background: '#fff', border: '1px solid #ccc' } },
+              { style: 'cream' as const, label: 'Crema (cálido)', dot: { background: '#F8F3EE', border: '1px solid #E7DCD3' } },
+              { style: 'transparent' as const, label: 'Solo recorte (PNG)', dot: { background: 'repeating-linear-gradient(45deg,#ddd 0 3px,#f5f5f5 3px 6px)', border: '1px solid #ccc' } },
+            ]).map(({ style, label, dot }) => (
+              <button
+                key={style}
+                type="button"
+                onClick={() => { closePrettifyMenu(); prettifyAt(prettifyMenuIdx, style) }}
+                disabled={prettifyingIdx !== null}
+                className="text-left text-[12px] px-2.5 py-2 rounded-lg hover:bg-surface-soft active:bg-surface-soft text-ink flex items-center gap-2"
+              >
+                <span className="inline-block w-3 h-3 rounded-full shrink-0" style={dot} />
+                {label}
+              </button>
+            ))}
+          </div>
+        </>,
+        document.body
       )}
     </div>
   )
