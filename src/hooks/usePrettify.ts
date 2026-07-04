@@ -47,7 +47,15 @@ export function usePrettify() {
     try {
       const { removeBackground } = await import('@imgly/background-removal')
 
-      const cutout = await removeBackground(source, {
+      // Normalizamos el formato ANTES de pasarlo al modelo. Sin esto, si la
+      // foto original es AVIF (iPhone/Android modernos a veces guardan así,
+      // y algunos sitios sirven las imágenes en AVIF) la librería lanza:
+      //     "Invalid format: image/avif with params: [object Object]"
+      // La compresión previa a veces no lo detecta porque el AVIF pesa menos
+      // que un JPEG del mismo contenido y `compressImage` prefiere no tocarlo.
+      const normalizedSource = await normalizeToSupportedFormat(source)
+
+      const cutout = await removeBackground(normalizedSource, {
         // Mejor modelo disponible → menos halos en pelo, tejidos finos, etc.
         model: 'isnet_fp16',
         output: { format: 'image/png', quality: 1 },
@@ -82,6 +90,64 @@ export function usePrettify() {
   }
 
   return { prettify, status, error, progress, reset, isLoading: status === 'loading' }
+}
+
+/**
+ * Formatos que `@imgly/background-removal` acepta directamente. Cualquier
+ * otro formato (avif, heic, gif, tiff, bmp…) provoca un "Invalid format"
+ * de la librería, así que lo convertimos a PNG con canvas antes de pasarlo.
+ */
+const SUPPORTED_INPUT_FORMATS = new Set([
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/webp',
+])
+
+/**
+ * Si el input es un File en un formato no soportado por el modelo, lo
+ * decodifica con canvas y lo re-empaqueta como PNG. Si el navegador tampoco
+ * puede decodificarlo (HEIC en Chrome, típicamente), lanza un error con
+ * mensaje entendible para la usuaria.
+ *
+ * Para inputs de tipo `string` (URLs) no hacemos nada: la librería hace
+ * el fetch internamente y sí acepta AVIF por HTTP (usa el decoder nativo
+ * del navegador, no la validación de tipos que aplica al File).
+ */
+async function normalizeToSupportedFormat(source: File | string): Promise<File | string> {
+  if (typeof source === 'string') return source
+  const type = source.type.toLowerCase()
+  if (SUPPORTED_INPUT_FORMATS.has(type)) return source
+
+  try {
+    const bitmap = await createImageBitmap(source)
+    try {
+      const canvas = document.createElement('canvas')
+      canvas.width = bitmap.width
+      canvas.height = bitmap.height
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('Canvas 2D no disponible')
+      ctx.drawImage(bitmap, 0, 0)
+
+      return await new Promise<File>((resolve, reject) => {
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error('No se pudo convertir el formato'))
+            const baseName = (source.name || 'foto').replace(/\.\w+$/, '')
+            resolve(new File([blob], `${baseName}.png`, { type: 'image/png' }))
+          },
+          'image/png'
+        )
+      })
+    } finally {
+      bitmap.close()
+    }
+  } catch {
+    throw new Error(
+      `El formato "${source.type || 'desconocido'}" no se puede procesar en este navegador. ` +
+        'Prueba con una foto JPG o PNG, o abre la app en Safari si es un HEIC del iPhone.'
+    )
+  }
 }
 
 /**
