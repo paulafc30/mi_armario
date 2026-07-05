@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { LogOut, User, Mail, Lock, Sun, Moon, Monitor, Info, Sparkles, Trash2, Ruler } from 'lucide-react'
+import { LogOut, User, Mail, Lock, Sun, Moon, Monitor, Info, Sparkles, Trash2, Ruler, Download } from 'lucide-react'
+import { exportArmario } from '@/lib/exportArmario'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile'
@@ -33,6 +34,7 @@ export default function Profile() {
   const [editing, setEditing] = useState<Field>(null)
   const [measurementsOpen, setMeasurementsOpen] = useState(false)
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -57,6 +59,18 @@ export default function Profile() {
     setTimeout(() => setToast(null), 2500)
   }
 
+  async function handleExport() {
+    setExporting(true)
+    try {
+      await exportArmario()
+      showToast('ok', 'Exportacion descargada (JSON + CSV)')
+    } catch (err: any) {
+      showToast('err', err?.message ?? 'Error al exportar')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   async function handleAvatarPick(file: File) {
     if (!user) return
     setUploadingAvatar(true)
@@ -79,7 +93,7 @@ export default function Profile() {
     if (!user || !avatarPath) return
     const ok = await confirm({
       title: 'Quitar foto de perfil',
-      message: 'Volverás a la inicial coral por defecto. Puedes subir otra foto cuando quieras.',
+      message: 'Volveras a la inicial coral por defecto. Puedes subir otra foto cuando quieras.',
       confirmText: 'Quitar',
       destructive: true,
     })
@@ -99,7 +113,7 @@ export default function Profile() {
   }
 
   async function saveUsername(value: string) {
-    if (!user) return { error: 'Sin sesión' }
+    if (!user) return { error: 'Sin sesion' }
     try {
       await updateProfile.mutateAsync({ username: value })
       setUsername(value)
@@ -118,7 +132,7 @@ export default function Profile() {
   async function savePassword(value: string) {
     const { error } = await supabase.auth.updateUser({ password: value })
     if (error) return { error: error.message }
-    showToast('ok', 'Contraseña actualizada')
+    showToast('ok', 'Contrasena actualizada')
   }
 
   async function saveMeasurements(patch: Partial<ProfileType>) {
@@ -132,9 +146,9 @@ export default function Profile() {
 
   async function handleSignOut() {
     const ok = await confirm({
-      title: 'Cerrar sesión',
-      message: 'Tendrás que volver a iniciar sesión para acceder a tu armario.',
-      confirmText: 'Cerrar sesión',
+      title: 'Cerrar sesion',
+      message: 'Tendras que volver a iniciar sesion para acceder a tu armario.',
+      confirmText: 'Cerrar sesion',
       destructive: true,
     })
     if (!ok) return
@@ -167,7 +181,7 @@ export default function Profile() {
       <SettingsSection title="Cuenta">
         <SettingsRow icon={User}  label="Nombre"     value={username || 'Sin nombre'} onClick={() => setEditing('username')} />
         <SettingsRow icon={Mail}  label="Email"      value={email}                    onClick={() => setEditing('email')} />
-        <SettingsRow icon={Lock}  label="Contraseña" value="••••••••"                  onClick={() => setEditing('password')} />
+        <SettingsRow icon={Lock}  label="Contrasena" value="........"                  onClick={() => setEditing('password')} />
         <SettingsRow icon={Ruler} label="Medidas y tallas" value={profile?.bust_cm ? 'Configuradas' : 'Sin configurar'} onClick={() => setMeasurementsOpen(true)} />
         {avatarUrl && (
           <SettingsRow icon={Trash2} iconAccent="rose" label="Quitar foto de perfil" onClick={handleAvatarRemove} chevron={false} />
@@ -183,13 +197,23 @@ export default function Profile() {
         </div>
       </SettingsSection>
 
+      <SettingsSection title="Datos" description="Exporta tu armario como copia de seguridad. Descarga un JSON completo y un CSV de tus prendas.">
+        <SettingsRow
+          icon={Download}
+          label={exporting ? 'Exportando...' : 'Exportar armario'}
+          value="JSON + CSV"
+          onClick={handleExport}
+          chevron={false}
+        />
+      </SettingsSection>
+
       <SettingsSection title="Acerca de">
-        <SettingsRow icon={Sparkles} label="Versión" value="0.1.0" chevron={false} />
-        <SettingsRow icon={Info}     label="Política de privacidad" chevron={false} />
+        <SettingsRow icon={Sparkles} label="Version" value="0.2.0" chevron={false} />
+        <SettingsRow icon={Info}     label="Politica de privacidad" chevron={false} />
       </SettingsSection>
 
       <div className="card overflow-hidden">
-        <SettingsRow icon={LogOut} label="Cerrar sesión" destructive onClick={handleSignOut} chevron={false} />
+        <SettingsRow icon={LogOut} label="Cerrar sesion" destructive onClick={handleSignOut} chevron={false} />
       </div>
 
       <EditFieldModal
@@ -208,16 +232,16 @@ export default function Profile() {
         label="Nuevo email"
         type="email"
         initialValue={email}
-        hint="Te enviaremos un correo de confirmación al nuevo email."
+        hint="Te enviaremos un correo de confirmacion al nuevo email."
         onSave={saveEmail}
       />
       <EditFieldModal
         open={editing === 'password'}
         onClose={() => setEditing(null)}
-        title="Cambiar contraseña"
-        label="Nueva contraseña"
+        title="Cambiar contrasena"
+        label="Nueva contrasena"
         type="password"
-        placeholder="Mínimo 6 caracteres"
+        placeholder="Minimo 6 caracteres"
         minLength={6}
         onSave={savePassword}
       />
