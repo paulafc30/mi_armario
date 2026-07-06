@@ -41,7 +41,7 @@ Deno.serve(async (req: Request) => {
       { data: outfits },
       { data: feedback },
     ] = await Promise.all([
-      supabase.from('clothes').select('id, name, category_id, brand, size, colors, status, image_url').in('status', ['closet', 'baul']).eq('user_id', user.id),
+      supabase.from('clothes').select('id, name, category_id, brand, size, colors, status, image_url').eq('status', 'closet').eq('user_id', user.id),
       supabase.from('categories').select('id, name').eq('user_id', user.id),
       supabase.from('outfits').select('id, name').eq('user_id', user.id).limit(10),
       supabase.from('stylist_feedback').select('reply_text, clothe_ids, rating, occasion').eq('user_id', user.id).order('created_at', { ascending: false }).limit(20),
@@ -146,7 +146,7 @@ ${wardrobeLines || 'Vacio.'}`
         if (errJson.error?.code === 'rate_limit_exceeded') userMsg = 'Demasiadas peticiones seguidas. Espera unos segundos e intenta de nuevo.'
         else if (errJson.error?.message) userMsg = errJson.error.message
       } catch { /* mantener mensaje generico */ }
-      return new Response(JSON.stringify({ error: userMsg }), { status: 429, headers: corsHeaders })
+      return new Response(JSON.stringify({ error: userMsg }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
     const groqData = await groqRes.json()
@@ -174,7 +174,7 @@ ${wardrobeLines || 'Vacio.'}`
     })
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
+      status: 200,
       headers: corsHeaders,
     })
   }

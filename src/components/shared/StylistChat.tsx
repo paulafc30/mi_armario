@@ -15,9 +15,13 @@ interface Message {
   referenced_clothes?: ReferencedClothe[]
   feedback?: 'positive' | 'negative'
   isError?: boolean
+  isRateLimit?: boolean
   retryText?: string
   occasionHint?: string
 }
+
+const RATE_LIMIT_PHRASE = 'Demasiadas peticiones'
+const RETRY_DELAY = 10 // segundos
 
 const QUICK_QUESTIONS = [
   'Que me pongo hoy?',
@@ -171,6 +175,44 @@ function extractOccasion(messages: Message[]): string {
   return userMessages.map((m) => m.content).join(' ').slice(0, 100)
 }
 
+// Countdown que auto-retries cuando llega a 0
+function RateLimitCountdown({
+  onRetry,
+  disabled,
+}: {
+  onRetry: () => void
+  disabled: boolean
+}) {
+  const [secs, setSecs] = useState(RETRY_DELAY)
+
+  useEffect(() => {
+    if (secs <= 0) {
+      onRetry()
+      return
+    }
+    const t = setTimeout(() => setSecs((s) => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [secs])
+
+  return (
+    <div className="flex items-center gap-2 mt-2 pt-2 border-t border-amber-200 dark:border-amber-500/30 text-xs text-amber-700 dark:text-amber-400">
+      {secs > 0 ? (
+        <span className="flex-1">Reintentando en {secs}s...</span>
+      ) : (
+        <span className="flex-1">Reintentando...</span>
+      )}
+      <button
+        type="button"
+        onClick={onRetry}
+        disabled={disabled || secs <= 0}
+        className="flex items-center gap-1 font-medium hover:opacity-70 disabled:opacity-40 transition"
+      >
+        <RotateCcw className="w-3.5 h-3.5" /> Ya
+      </button>
+    </div>
+  )
+}
+
 export default function StylistChat() {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
@@ -243,10 +285,14 @@ export default function StylistChat() {
 
       if (res.error || data?.error) {
         const errMsg = data?.error ?? res.error?.message ?? 'Error desconocido'
+        const isRateLimit = errMsg.includes(RATE_LIMIT_PHRASE)
         setMessages((prev) => [...prev, {
           role: 'assistant',
-          content: errMsg,
+          content: isRateLimit
+            ? 'Groq tiene un limite de peticiones por minuto. Reintentando automaticamente...'
+            : errMsg,
           isError: true,
+          isRateLimit,
           retryText: userMsg,
         }])
         return
@@ -383,12 +429,20 @@ export default function StylistChat() {
                       'max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
                       msg.role === 'user'
                         ? 'bg-brand-gradient text-white rounded-br-sm'
-                        : msg.isError
-                          ? 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 rounded-bl-sm'
-                          : 'bg-surface border border-line text-ink rounded-bl-sm',
+                        : msg.isRateLimit
+                          ? 'bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-800 dark:text-amber-300 rounded-bl-sm'
+                          : msg.isError
+                            ? 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 rounded-bl-sm'
+                            : 'bg-surface border border-line text-ink rounded-bl-sm',
                     )}>
                       {msg.content}
-                      {msg.isError && msg.retryText && (
+                      {msg.isRateLimit && msg.retryText && (
+                        <RateLimitCountdown
+                          onRetry={() => retry(i)}
+                          disabled={loading}
+                        />
+                      )}
+                      {msg.isError && !msg.isRateLimit && msg.retryText && (
                         <button
                           type="button"
                           onClick={() => retry(i)}
