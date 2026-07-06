@@ -17,7 +17,7 @@ export default function AppShell() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-20 bg-page/20 backdrop-blur-xl safe-top">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-gradient text-white shadow-lift shrink-0">
             <HangerIcon className="w-5 h-5" />
           </div>
@@ -27,7 +27,7 @@ export default function AppShell() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-3xl w-full mx-auto pb-32 pt-3">
+      <main className="flex-1 max-w-7xl w-full mx-auto pb-32 pt-3">
         <div className="animate-fade-in">
           <Outlet />
         </div>

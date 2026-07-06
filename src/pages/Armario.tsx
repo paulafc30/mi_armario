@@ -161,7 +161,7 @@ export default function Armario() {
               }
             />
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
               {filtered.map((c) => (
                 <ClotheCard key={c.id} clothe={c} category={c.category_id ? catMap[c.category_id] : undefined}
                   onClick={() => { setSelected(c); setDetailOpen(true) }} />
@@ -187,7 +187,7 @@ export default function Armario() {
             }
           />
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {outfits.map((o) => {
               // Si el outfit tiene fotos propias, usar ésas (preferidas).
               // Si no, caer a portadas de sus prendas, como antes.

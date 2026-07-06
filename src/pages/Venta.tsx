@@ -297,7 +297,7 @@ export default function Venta() {
           subtitle="Mueve prendas desde tu armario o añade una nueva directamente aquí."
         />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {filtered.map((c) => (
             <SaleCard key={c.id} clothe={c} onEdit={() => { setEditing(c); setFormOpen(true) }} />
           ))}

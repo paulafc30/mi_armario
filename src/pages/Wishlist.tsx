@@ -122,7 +122,7 @@ export default function Wishlist() {
           }
         />
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           {filtered.map((it) => (
             <div key={it.id} className="card overflow-hidden">
               <button onClick={() => { setEditing(it); setFormOpen(true) }} className="block w-full text-left">

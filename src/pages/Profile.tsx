@@ -158,7 +158,7 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 pb-6 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 pb-6 space-y-6">
       <ProfileHeader
         username={username}
         email={email}

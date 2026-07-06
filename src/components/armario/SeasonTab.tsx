@@ -60,7 +60,7 @@ function SeasonFolder({
               Edita una prenda y selecciona esta temporada.
             </p>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-1">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 mt-1">
               {seasonClothes.map((clothe) => (
                 <div key={clothe.id} className="aspect-square rounded-xl overflow-hidden bg-surface-soft relative">
                   {clothe.image_url ? (
