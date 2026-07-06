@@ -16,7 +16,6 @@ interface Message {
   feedback?: 'positive' | 'negative'
   isError?: boolean
   retryText?: string
-  // contexto de ocasion extraido de los mensajes previos del usuario (para guardar en feedback)
   occasionHint?: string
 }
 
@@ -167,7 +166,6 @@ function ClotheZoom({ clothe, onClose }: { clothe: ReferencedClothe; onClose: ()
   )
 }
 
-// Extrae una pista de ocasion de los ultimos mensajes del usuario
 function extractOccasion(messages: Message[]): string {
   const userMessages = messages.filter((m) => m.role === 'user').slice(-3)
   return userMessages.map((m) => m.content).join(' ').slice(0, 100)
@@ -198,7 +196,6 @@ export default function StylistChat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, loading])
 
-  // Recoge todos los IDs ya sugeridos en esta conversación
   function getSuggestedIds(msgs: Message[]): string[] {
     const ids = new Set<string>()
     msgs.forEach((m) => {
@@ -220,7 +217,6 @@ export default function StylistChat() {
     const suggested_ids = getSuggestedIds(currentMessages)
 
     setMessages((prev) => {
-      // Si venimos de retry, no añadir el mensaje de usuario otra vez (ya está)
       const last = prev[prev.length - 1]
       if (last?.role === 'user' && last.content === userMsg) return prev
       return [...prev, { role: 'user', content: userMsg }]
@@ -238,8 +234,13 @@ export default function StylistChat() {
         },
       })
 
-      // La Edge Function puede devolver { error } con status 4xx/5xx
-      const data = res.data as { reply?: string; referenced_clothes?: ReferencedClothe[]; weather?: string; error?: string } | null
+      const data = res.data as {
+        reply?: string
+        referenced_clothes?: ReferencedClothe[]
+        weather?: string
+        error?: string
+      } | null
+
       if (res.error || data?.error) {
         const errMsg = data?.error ?? res.error?.message ?? 'Error desconocido'
         setMessages((prev) => [...prev, {
@@ -273,7 +274,6 @@ export default function StylistChat() {
   async function retry(msgIndex: number) {
     const retryMsg = messages[msgIndex]?.retryText
     if (!retryMsg) return
-    // Eliminar el mensaje de error y reintentar
     const withoutError = messages.filter((_, i) => i !== msgIndex)
     setMessages(withoutError)
     await send(retryMsg, withoutError)
@@ -283,7 +283,6 @@ export default function StylistChat() {
     const msg = messages[msgIndex]
     if (!msg || msg.role !== 'assistant') return
 
-    // Actualizar estado local inmediatamente
     setMessages((prev) => prev.map((m, i) =>
       i === msgIndex ? { ...m, feedback: rating } : m
     ))
@@ -374,42 +373,47 @@ export default function StylistChat() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-              {messages.map((msg, i) => (
-                <div key={i} className={cx('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
-                  <div className={cx(
-                    'max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
-                    msg.role === 'user'
-                      ? 'bg-brand-gradient text-white rounded-br-sm'
-                      : msg.isError
-                        ? 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 rounded-bl-sm'
-                        : 'bg-surface border border-line text-ink rounded-bl-sm',
-                  )}>
-                    {msg.content}
-                    {msg.isError && msg.retryText && (
-                      <button
-                        type="button"
-                        onClick={() => retry(i)}
-                        disabled={loading}
-                        className="flex items-center gap-1.5 mt-2 pt-2 border-t border-red-200 dark:border-red-500/30 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 disabled:opacity-50 transition"
-                      >
-                        <RotateCcw className="w-3.5 h-3.5" /> Reintentar
-                      </button>
-                    )}
-                    {msg.role === 'assistant' && !msg.isError && msg.referenced_clothes && msg.referenced_clothes.length > 0 && (
-                      <>
-                        <ClothesPreview
-                          clothes={msg.referenced_clothes}
-                          onZoom={(c) => setZoomedClothe(c)}
-                        />
-                        <FeedbackButtons
-                          given={msg.feedback}
-                          onFeedback={(r) => handleFeedback(i, r)}
-                        />
-                      </>
-                    )}
+              {messages.map((msg, i) => {
+                const hasClothes = msg.role === 'assistant'
+                  && !msg.isError
+                  && (msg.referenced_clothes?.length ?? 0) > 0
+                return (
+                  <div key={i} className={cx('flex', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+                    <div className={cx(
+                      'max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
+                      msg.role === 'user'
+                        ? 'bg-brand-gradient text-white rounded-br-sm'
+                        : msg.isError
+                          ? 'bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 rounded-bl-sm'
+                          : 'bg-surface border border-line text-ink rounded-bl-sm',
+                    )}>
+                      {msg.content}
+                      {msg.isError && msg.retryText && (
+                        <button
+                          type="button"
+                          onClick={() => retry(i)}
+                          disabled={loading}
+                          className="flex items-center gap-1.5 mt-2 pt-2 border-t border-red-200 dark:border-red-500/30 text-xs font-medium text-red-600 dark:text-red-400 hover:text-red-800 disabled:opacity-50 transition"
+                        >
+                          <RotateCcw className="w-3.5 h-3.5" /> Reintentar
+                        </button>
+                      )}
+                      {hasClothes && (
+                        <>
+                          <ClothesPreview
+                            clothes={msg.referenced_clothes!}
+                            onZoom={(c) => setZoomedClothe(c)}
+                          />
+                          <FeedbackButtons
+                            given={msg.feedback}
+                            onFeedback={(r) => handleFeedback(i, r)}
+                          />
+                        </>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
 
               {loading && (
                 <div className="flex justify-start">

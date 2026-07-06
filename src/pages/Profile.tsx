@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { LogOut, User, Mail, Lock, Sun, Moon, Monitor, Info, Sparkles, Trash2, Ruler, Download } from 'lucide-react'
+import { LogOut, User, Mail, Lock, Sun, Moon, Monitor, Info, Sparkles, Trash2, Ruler, Download, MessageCircle } from 'lucide-react'
 import { exportArmario } from '@/lib/exportArmario'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -15,6 +15,7 @@ import EditFieldModal from '@/components/profile/EditFieldModal'
 import ProfileHeader from '@/components/profile/ProfileHeader'
 import MeasurementsModal from '@/components/profile/MeasurementsModal'
 import BodyTypeCard from '@/components/profile/BodyTypeCard'
+import FeedbackModal from '@/components/profile/FeedbackModal'
 import type { Profile as ProfileType } from '@/types/database'
 
 type Field = 'username' | 'email' | 'password' | null
@@ -33,6 +34,7 @@ export default function Profile() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [editing, setEditing] = useState<Field>(null)
   const [measurementsOpen, setMeasurementsOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null)
   const [exporting, setExporting] = useState(false)
 
@@ -207,6 +209,16 @@ export default function Profile() {
         />
       </SettingsSection>
 
+      <SettingsSection title="Ayuda">
+        <SettingsRow
+          icon={MessageCircle}
+          iconAccent="brand"
+          label="Sugerencias y fallos"
+          value="Cuentanos"
+          onClick={() => setFeedbackOpen(true)}
+        />
+      </SettingsSection>
+
       <SettingsSection title="Acerca de">
         <SettingsRow icon={Sparkles} label="Version" value="0.2.0" chevron={false} />
         <SettingsRow icon={Info}     label="Politica de privacidad" chevron={false} />
@@ -257,6 +269,10 @@ export default function Profile() {
         onClose={() => setMeasurementsOpen(false)}
         initial={profile ?? null}
         onSave={saveMeasurements}
+      />
+      <FeedbackModal
+        open={feedbackOpen}
+        onClose={() => setFeedbackOpen(false)}
       />
     </div>
   )
