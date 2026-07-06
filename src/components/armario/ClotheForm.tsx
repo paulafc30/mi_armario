@@ -279,6 +279,9 @@ export default function ClotheForm({
           </div>
         )}
         <MultiImagePicker images={images} onChange={setImages} />
+        <p className="text-[11px] text-muted leading-relaxed -mt-1">
+          📸 Mejor resultado con el prettifier: fondo blanco o liso, buena luz natural, prenda extendida o en percha y encuadre centrado.
+        </p>
 
         <div>
           <label className="label">Nombre</label>
