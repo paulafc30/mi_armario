@@ -3,7 +3,7 @@ import Modal from '@/components/shared/Modal'
 import MultiImagePicker, { PickerImage } from '@/components/shared/MultiImagePicker'
 import ShareOutfitModal from './ShareOutfitModal'
 import { useClothes } from '@/hooks/useClothes'
-import { useCreateOutfit, useDeleteOutfit, useUpdateOutfit, OutfitWithItems } from '@/hooks/useOutfits'
+import { useCreateOutfit, useDeleteOutfit, useUpdateOutfit, useOutfits, OutfitWithItems } from '@/hooks/useOutfits'
 import { useAuth } from '@/hooks/useAuth'
 import { useConfirm } from '@/components/shared/ConfirmModal'
 import { uploadImage, deleteImage } from '@/lib/images'
@@ -15,6 +15,7 @@ import { cx } from '@/lib/utils'
 export default function OutfitForm({ open, onClose, outfit }: { open: boolean; onClose: () => void; outfit?: OutfitWithItems | null }) {
   const { user } = useAuth()
   const { data: closet = [] } = useClothes(['closet'])
+  const { data: outfits = [] } = useOutfits()
   const create = useCreateOutfit()
   const update = useUpdateOutfit()
   const del = useDeleteOutfit()
@@ -31,7 +32,7 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
   useEffect(() => {
     if (!open) return
     setError(null)
-    setName(outfit?.name ?? '')
+    setName(outfit?.name ?? `Look #${outfits.length + 1}`)
     setSelected(new Set(outfit?.clothe_ids ?? []))
     if (outfit) {
       supabase
@@ -58,7 +59,6 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
   }
 
   async function syncOutfitImages(outfitId: string, userId: string) {
-    // Borrar fotos que ya no están
     const stillThere = new Set(
       photos.filter((p) => p.kind === 'existing').map((p) => p.kind === 'existing' ? p.id : '')
     )
@@ -67,8 +67,6 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
       if (orig.path) await deleteImage(orig.path)
       await supabase.from('outfit_images').delete().eq('id', orig.id)
     }
-
-    // Insertar/actualizar en orden
     for (let i = 0; i < photos.length; i++) {
       const item = photos[i]
       if (item.kind === 'existing') {
@@ -153,7 +151,7 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
               disabled={!canShare}
               onClick={() => setShareOpen(true)}
               className="text-xs font-semibold text-brand-700 hover:text-brand-800 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
-              title={canShare ? 'Generar imagen del outfit' : 'Añade fotos o prendas y dale nombre'}
+              title={canShare ? 'Generar imagen del outfit' : 'Anade fotos o prendas y dale nombre'}
             >
               <Share2 className="w-3.5 h-3.5" /> Compartir como imagen
             </button>
@@ -178,7 +176,7 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
               )
             })}
           </div>
-          {closet.length === 0 && <p className="text-sm text-muted">No hay prendas en tu armario aún.</p>}
+          {closet.length === 0 && <p className="text-sm text-muted">No hay prendas en tu armario aun.</p>}
         </div>
 
         {error && <p className="text-sm text-red-600 bg-red-50 dark:bg-red-500/10 rounded-xl px-3 py-2">{error}</p>}
@@ -186,7 +184,7 @@ export default function OutfitForm({ open, onClose, outfit }: { open: boolean; o
         <div className="flex gap-2 pt-2">
           {outfit && <button type="button" onClick={handleDelete} className="btn-danger"><Trash2 className="w-4 h-4" /></button>}
           <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancelar</button>
-          <button type="submit" disabled={submitting} className="btn-primary flex-1">{submitting ? 'Guardando…' : 'Guardar'}</button>
+          <button type="submit" disabled={submitting} className="btn-primary flex-1">{submitting ? 'Guardando...' : 'Guardar'}</button>
         </div>
       </form>
 

@@ -216,6 +216,13 @@ export default function Profile() {
         <SettingsRow icon={LogOut} label="Cerrar sesion" destructive onClick={handleSignOut} chevron={false} />
       </div>
 
+      <p className="text-center text-xs text-muted pb-2">
+        Hecho con cuidado por{' '}
+        <a href="https://ferava.dev" target="_blank" rel="noreferrer" className="font-semibold text-brand-700 hover:underline">
+          Ferava
+        </a>
+      </p>
+
       <EditFieldModal
         open={editing === 'username'}
         onClose={() => setEditing(null)}
