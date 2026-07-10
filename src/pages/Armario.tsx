@@ -8,6 +8,7 @@ import { useClothes } from '@/hooks/useClothes'
 import { useCategories } from '@/hooks/useCategories'
 import { useOutfits, OutfitWithItems } from '@/hooks/useOutfits'
 import { useSearchStore } from '@/store/search'
+import SearchFilterPanel from '@/components/shared/SearchFilterPanel'
 import ClotheCard from '@/components/armario/ClotheCard'
 import ClotheForm from '@/components/armario/ClotheForm'
 import ClotheDetail from '@/components/armario/ClotheDetail'
@@ -26,16 +27,13 @@ export default function Armario() {
   const { data: clothes = [], isLoading } = useClothes(['closet'])
   const { data: categories = [] } = useCategories()
   const { data: outfits = [] } = useOutfits()
-  const { query } = useSearchStore()
+  const { query, filters } = useSearchStore()
 
   const [filterCat, setFilterCat] = useState<string | null>(null)
-
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Clothe | null>(null)
   const [prefill, setPrefill] = useState<ClothePrefill | undefined>(undefined)
 
-  // Si la usuaria viene desde "Compartir → Armario", abrir el formulario
-  // prerellenado con lo que llegue del share.
   useEffect(() => {
     const shared = consumeSharedPayload('armario')
     if (shared) {
@@ -48,6 +46,7 @@ export default function Armario() {
       setFormOpen(true)
     }
   }, [])
+
   const [detailOpen, setDetailOpen] = useState(false)
   const [selected, setSelected] = useState<Clothe | null>(null)
   const [catModal, setCatModal] = useState(false)
@@ -55,13 +54,29 @@ export default function Armario() {
   const [outfitEditing, setOutfitEditing] = useState<OutfitWithItems | null>(null)
   const [outfitSuggestOpen, setOutfitSuggestOpen] = useState(false)
 
+  const uniqueBrands = useMemo(() =>
+    [...new Set(clothes.map((c) => c.brand).filter(Boolean) as string[])].sort(),
+  [clothes])
+
+  const hasActiveSearch = !!(
+    query.trim() ||
+    filters.colors.length ||
+    filters.sizes.length ||
+    filters.materials.length ||
+    filters.brands.length
+  )
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return clothes.filter((c) => {
       if (filterCat && c.category_id !== filterCat) return false
+      const allColors = c.colors && c.colors.length > 0 ? c.colors : (c.color ? [c.color] : [])
+      if (filters.colors.length > 0 && !filters.colors.some((fc) => allColors.some((cc) => cc.toLowerCase() === fc.toLowerCase()))) return false
+      if (filters.sizes.length > 0 && !filters.sizes.includes(c.size ?? '')) return false
+      if (filters.materials.length > 0 && !filters.materials.some((fm) => c.material?.toLowerCase().includes(fm.toLowerCase()))) return false
+      if (filters.brands.length > 0 && !filters.brands.includes(c.brand ?? '')) return false
       if (!q) return true
       const cat = categories.find((cc) => cc.id === c.category_id)
-      const allColors = c.colors && c.colors.length > 0 ? c.colors : (c.color ? [c.color] : [])
       return (
         c.name.toLowerCase().includes(q) ||
         (c.brand?.toLowerCase().includes(q) ?? false) ||
@@ -71,7 +86,7 @@ export default function Armario() {
         (cat?.name.toLowerCase().includes(q) ?? false)
       )
     })
-  }, [clothes, query, filterCat, categories])
+  }, [clothes, query, filterCat, filters, categories])
 
   const catMap = useMemo(() => Object.fromEntries(categories.map((c) => [c.id, c])), [categories])
 
@@ -147,8 +162,16 @@ export default function Armario() {
             })}
           </div>
 
+          <SearchFilterPanel brands={uniqueBrands} />
+
           {isLoading ? (
             <p className="text-center text-muted py-12">Cargando…</p>
+          ) : filtered.length === 0 && hasActiveSearch ? (
+            <EmptyState
+              icon={Shirt}
+              title="Sin resultados"
+              subtitle="No se encontraron prendas con ese criterio de búsqueda."
+            />
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={Shirt}
@@ -189,8 +212,6 @@ export default function Armario() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
             {outfits.map((o) => {
-              // Si el outfit tiene fotos propias, usar ésas (preferidas).
-              // Si no, caer a portadas de sus prendas, como antes.
               const ownPhotos = (o.image_urls ?? []).slice(0, 4)
               const previews = ownPhotos.length > 0
                 ? ownPhotos
