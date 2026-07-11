@@ -1,13 +1,25 @@
-import { useState } from 'react'
-import { Lightbulb, Bug, Mail, CheckCircle2, MailWarning, AlertTriangle } from 'lucide-react'
-import Modal from '@/components/shared/Modal'
-import { useSubmitFeedback, type FeedbackPayload } from '@/hooks/useFeedback'
-import { useAuth } from '@/hooks/useAuth'
-import { cx } from '@/lib/utils'
+import { useState } from 'react';
+import {
+  Lightbulb,
+  Bug,
+  Mail,
+  CheckCircle2,
+  MailWarning,
+  AlertTriangle,
+} from 'lucide-react';
+import Modal from '@/components/shared/Modal';
+import { useSubmitFeedback, type FeedbackPayload } from '@/hooks/useFeedback';
+import { useAuth } from '@/hooks/useAuth';
+import { cx } from '@/lib/utils';
 
-const SUPPORT_EMAIL = 'paulafc30@gmail.com'
+const SUPPORT_EMAIL = 'contacto@ferava.es';
 
-const TYPES: { value: FeedbackPayload['type']; label: string; icon: typeof Bug; placeholder: string }[] = [
+const TYPES: {
+  value: FeedbackPayload['type'];
+  label: string;
+  icon: typeof Bug;
+  placeholder: string;
+}[] = [
   {
     value: 'suggestion',
     label: 'Sugerencia',
@@ -26,39 +38,45 @@ const TYPES: { value: FeedbackPayload['type']; label: string; icon: typeof Bug; 
     icon: Mail,
     placeholder: 'Cuéntanos lo que necesites…',
   },
-]
+];
 
-type Result = { emailSent: boolean; emailError: string | null }
+type Result = { emailSent: boolean; emailError: string | null };
 
-export default function FeedbackModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { user } = useAuth()
-  const submit = useSubmitFeedback()
-  const [type, setType] = useState<FeedbackPayload['type']>('suggestion')
-  const [message, setMessage] = useState('')
-  const [email, setEmail] = useState(user?.email ?? '')
-  const [formError, setFormError] = useState<string | null>(null)
-  const [result, setResult] = useState<Result | null>(null)
+export default function FeedbackModal({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { user } = useAuth();
+  const submit = useSubmitFeedback();
+  const [type, setType] = useState<FeedbackPayload['type']>('suggestion');
+  const [message, setMessage] = useState('');
+  const [email, setEmail] = useState(user?.email ?? '');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [result, setResult] = useState<Result | null>(null);
 
   function handleClose() {
-    onClose()
+    onClose();
     // Reset con delay para que no se vea el flash al cerrar
     setTimeout(() => {
-      setType('suggestion')
-      setMessage('')
-      setEmail(user?.email ?? '')
-      setFormError(null)
-      setResult(null)
-    }, 300)
+      setType('suggestion');
+      setMessage('');
+      setEmail(user?.email ?? '');
+      setFormError(null);
+      setResult(null);
+    }, 300);
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setFormError(null)
+    e.preventDefault();
+    setFormError(null);
     try {
-      const res = await submit.mutateAsync({ type, message, email })
-      setResult({ emailSent: res.emailSent, emailError: res.emailError })
+      const res = await submit.mutateAsync({ type, message, email });
+      setResult({ emailSent: res.emailSent, emailError: res.emailError });
     } catch (err: any) {
-      setFormError(err.message ?? 'No se pudo enviar')
+      setFormError(err.message ?? 'No se pudo enviar');
     }
   }
 
@@ -72,8 +90,12 @@ export default function FeedbackModal({ open, onClose }: { open: boolean; onClos
                 <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div>
-                <p className="font-semibold text-ink">¡Gracias por tu mensaje!</p>
-                <p className="text-sm text-muted mt-1">Lo revisaremos pronto. Si dejaste tu email, te respondemos.</p>
+                <p className="font-semibold text-ink">
+                  ¡Gracias por tu mensaje!
+                </p>
+                <p className="text-sm text-muted mt-1">
+                  Lo revisaremos pronto. Si dejaste tu email, te respondemos.
+                </p>
               </div>
             </div>
           ) : (
@@ -84,17 +106,19 @@ export default function FeedbackModal({ open, onClose }: { open: boolean; onClos
               <div>
                 <p className="font-semibold text-ink">Mensaje guardado</p>
                 <p className="text-sm text-muted mt-1">
-                  Guardado correctamente, pero el email no pudo enviarse. Lo veremos igualmente.
+                  Guardado correctamente, pero el email no pudo enviarse. Lo
+                  veremos igualmente.
                 </p>
               </div>
               <a
                 href={`mailto:${SUPPORT_EMAIL}`}
-                className="inline-flex items-center gap-1.5 text-xs text-brand-700 hover:underline"
-              >
+                className="inline-flex items-center gap-1.5 text-xs text-brand-700 hover:underline">
                 <Mail className="w-3.5 h-3.5" /> {SUPPORT_EMAIL}
               </a>
               {result.emailError && (
-                <p className="text-[11px] text-muted">Detalle: {result.emailError}</p>
+                <p className="text-[11px] text-muted">
+                  Detalle: {result.emailError}
+                </p>
               )}
             </div>
           )}
@@ -102,11 +126,13 @@ export default function FeedbackModal({ open, onClose }: { open: boolean; onClos
             <button
               type="button"
               onClick={() => setResult(null)}
-              className="btn-secondary flex-1"
-            >
+              className="btn-secondary flex-1">
               Enviar otro
             </button>
-            <button type="button" onClick={handleClose} className="btn-primary flex-1">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="btn-primary flex-1">
               Cerrar
             </button>
           </div>
@@ -114,7 +140,8 @@ export default function FeedbackModal({ open, onClose }: { open: boolean; onClos
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
           <p className="text-sm text-muted">
-            ¿Has detectado un fallo o se te ocurre una mejora? Lo guardamos y llega al equipo automáticamente.
+            ¿Has detectado un fallo o se te ocurre una mejora? Lo guardamos y
+            llega al equipo automáticamente.
           </p>
 
           {/* Tipo */}
@@ -131,8 +158,7 @@ export default function FeedbackModal({ open, onClose }: { open: boolean; onClos
                     type === value
                       ? 'bg-brand-gradient text-white border-transparent shadow-lift'
                       : 'bg-surface-soft text-muted border-line hover:text-ink',
-                  )}
-                >
+                  )}>
                   <Icon className="w-4 h-4" />
                   {label}
                 </button>
@@ -153,13 +179,18 @@ export default function FeedbackModal({ open, onClose }: { open: boolean; onClos
               className="input w-full resize-none mt-1.5"
             />
             <div className="flex justify-end mt-1">
-              <span className="text-[11px] text-muted">{message.length}/2000</span>
+              <span className="text-[11px] text-muted">
+                {message.length}/2000
+              </span>
             </div>
           </div>
 
           {/* Email */}
           <div>
-            <label className="label">Email para responderte <span className="font-normal text-muted">(opcional)</span></label>
+            <label className="label">
+              Email para responderte{' '}
+              <span className="font-normal text-muted">(opcional)</span>
+            </label>
             <input
               type="email"
               value={email}
@@ -177,19 +208,21 @@ export default function FeedbackModal({ open, onClose }: { open: boolean; onClos
           )}
 
           <div className="flex gap-2 pt-1">
-            <button type="button" onClick={handleClose} className="btn-secondary flex-1">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="btn-secondary flex-1">
               Cancelar
             </button>
             <button
               type="submit"
               disabled={submit.isPending || !message.trim()}
-              className="btn-primary flex-1"
-            >
+              className="btn-primary flex-1">
               {submit.isPending ? 'Enviando…' : 'Enviar'}
             </button>
           </div>
         </form>
       )}
     </Modal>
-  )
+  );
 }
