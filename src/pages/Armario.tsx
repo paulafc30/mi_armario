@@ -4,6 +4,7 @@ import type { ClothePrefill } from '@/components/armario/ClotheForm'
 import { Plus, Settings2, Folder, Calendar as CalendarIcon, Shirt, Sparkles, Leaf } from 'lucide-react'
 import EmptyState from '@/components/shared/EmptyState'
 import PlannedTodayBanner from '@/components/armario/PlannedTodayBanner'
+import DailyOutfitsCarousel from '@/components/armario/DailyOutfitsCarousel'
 import { useClothes } from '@/hooks/useClothes'
 import { useCategories } from '@/hooks/useCategories'
 import { useOutfits, OutfitWithItems } from '@/hooks/useOutfits'
@@ -161,6 +162,8 @@ export default function Armario() {
               )
             })}
           </div>
+
+          <DailyOutfitsCarousel />
 
           <SearchFilterPanel brands={uniqueBrands} />
 

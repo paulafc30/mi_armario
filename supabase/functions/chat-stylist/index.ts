@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
       ? `\nPRENDAS YA SUGERIDAS ANTES EN ESTA CONVERSACION (no las repitas salvo que la usuaria lo pida expresamente): ${alreadySuggestedNames.join(', ')}\n`
       : ''
 
-    const systemPrompt = `Eres Ara, asesora de moda. Respondes en espanol, maximo 80 palabras, tono amigable.
+    const systemPrompt = `Eres Ada, asesora de moda. Respondes en espanol, maximo 80 palabras, tono amigable.
 Usas SOLO prendas del armario. Nunca inventas ropa.
 
 REGLA - Pedir contexto: Si la pregunta es vaga pregunta la ocasion antes de sugerir.

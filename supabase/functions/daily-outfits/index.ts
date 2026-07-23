@@ -1,0 +1,319 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+// Las 3 franjas fijas del carrusel del dashboard.
+const DAILY_OCCASIONS = ['casual', 'gym', 'cena'] as const
+type DailyOccasion = typeof DAILY_OCCASIONS[number]
+
+const OCCASION_LABELS: Record<DailyOccasion, string> = {
+  casual: 'casual del dia a dia',
+  gym: 'deporte o gimnasio',
+  cena: 'salir de noche / cena',
+}
+
+function classifyCategory(name: string): string {
+  const n = name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+  if (/bikini|banador|bano|swimwear/.test(n)) return 'swimwear'
+  if (/vestido|mono|jumpsuit|overall|enterizo/.test(n)) return 'fullbody'
+  if (/abrigo|chaqueta|cazadora|blazer|cardigan|jersey|sudadera|hoodie|anorak/.test(n)) return 'outerwear'
+  if (/camiseta|top|blusa|camisa|body|tirante|crop/.test(n)) return 'top'
+  if (/pantalon|falda|short|jean|vaquero|leggin|culot/.test(n)) return 'bottom'
+  if (/zapato|zapatilla|bota|sandalia|tacón|tacon|calzado/.test(n)) return 'footwear'
+  if (/accesorio|bolso|cinturon|bufanda|gorro|joya|collar|pendiente|pulsera|reloj|sombrero|gafas/.test(n)) return 'accessory'
+  if (/deporte|gym|sport|running|yoga/.test(n)) return 'sportswear'
+  return 'other'
+}
+
+function tempToSeason(tempC: number): string {
+  if (tempC >= 28) return 'calor intenso (verano, ropa ligera, sin capas)'
+  if (tempC >= 20) return 'calor moderado (primavera/verano, ropa ligera)'
+  if (tempC >= 12) return 'fresco (otono/primavera, puede necesitar chaqueta)'
+  if (tempC >= 5) return 'frio (otono/invierno, necesita capas y abrigo)'
+  return 'frio intenso (invierno, abrigo obligatorio)'
+}
+
+function weatherCodeToLabel(code: number): string {
+  if (code === 0) return 'despejado'
+  if (code <= 3) return 'parcialmente nublado'
+  if (code <= 49) return 'niebla'
+  if (code <= 59) return 'llovizna'
+  if (code <= 69) return 'lluvia'
+  if (code <= 79) return 'nieve'
+  if (code <= 99) return 'tormenta'
+  return 'variable'
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  try {
+    const { lat, lon } = await req.json().catch(() => ({ lat: null, lon: null }))
+
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) return new Response(JSON.stringify({ error: 'No auth' }), { status: 401, headers: corsHeaders })
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''))
+    if (authError || !user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders })
+
+    const today = new Date().toISOString().slice(0, 10) // YYYY-MM-DD (UTC, consistente con created_at)
+
+    // 1. Ver si ya hay sugerencias cacheadas para hoy
+    const { data: cached } = await supabase
+      .from('daily_outfit_suggestions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('suggestion_date', today)
+
+    const cachedByOccasion: Record<string, any> = {}
+    for (const row of cached ?? []) cachedByOccasion[row.occasion] = row
+
+    const haveAll = DAILY_OCCASIONS.every((o) => cachedByOccasion[o])
+
+    // Necesitamos el armario en ambos casos: para generar (si faltan) o para
+    // hidratar los item_ids cacheados con los datos completos de la prenda.
+    const { data: categories } = await supabase
+      .from('categories')
+      .select('id, name')
+      .eq('user_id', user.id)
+
+    const catMap: Record<string, { name: string; type: string }> = {}
+    for (const cat of categories ?? []) {
+      catMap[cat.id] = { name: cat.name, type: classifyCategory(cat.name) }
+    }
+
+    const { data: clothes, error: dbError } = await supabase
+      .from('clothes')
+      .select('id, name, brand, category_id, colors, tags, size, image_url')
+      .eq('user_id', user.id)
+      .not('status', 'in', '("en_venta","vendida","archivada")')
+      .limit(90)
+
+    if (dbError) throw new Error(dbError.message)
+    const clothesMap = Object.fromEntries((clothes ?? []).map((c) => [c.id, c]))
+
+    if (haveAll) {
+      const outfits = DAILY_OCCASIONS.map((occasion) => {
+        const row = cachedByOccasion[occasion]
+        return {
+          occasion,
+          name: row.name,
+          reason: row.reason,
+          weather: row.weather,
+          items: (row.item_ids || []).map((id: string) => clothesMap[id]).filter(Boolean),
+        }
+      })
+      return new Response(JSON.stringify({ outfits }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (!clothes || clothes.length < 3) {
+      return new Response(
+        JSON.stringify({ error: 'Pocas prendas en el armario para sugerir outfits.' }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
+    // 2. Clima (una sola vez, compartido por las 3 ocasiones)
+    let weatherDesc = 'clima desconocido'
+    let tempC: number | null = null
+    if (lat && lon) {
+      try {
+        const wRes = await fetch(
+          `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weathercode&timezone=auto`
+        )
+        const wData = await wRes.json()
+        tempC = Math.round(wData.current?.temperature_2m)
+        const wLabel = weatherCodeToLabel(wData.current?.weathercode)
+        weatherDesc = `${tempC}C, ${wLabel}, ${tempToSeason(tempC!)}`
+      } catch { /* opcional */ }
+    }
+
+    const inventory = (clothes ?? []).map((c) => {
+      const cat = c.category_id ? catMap[c.category_id] : null
+      return {
+        id: c.id,
+        nombre: c.name,
+        marca: c.brand || null,
+        colores: (c.colors || []).join(', ') || null,
+        tags: (c.tags || []).join(', ') || null,
+        categoria: cat?.name || null,
+        tipo: cat?.type || 'other',
+      }
+    })
+
+    const gymTypes = ['sportswear']
+    const swimTypes = ['swimwear']
+
+    // Representación compacta (menos tokens): id corto, tipo, color principal.
+    // Sin marca/tags/categoria — no aportan lo suficiente al estilismo como
+    // para justificar el coste en tokens, y "tipo" ya resume la categoria.
+    const MAX_ITEMS_PER_LIST = 40
+    function toCompact(items: typeof inventory) {
+      return items.slice(0, MAX_ITEMS_PER_LIST).map((i) => ({
+        id: i.id,
+        n: i.nombre,
+        t: i.tipo,
+        c: i.colores,
+      }))
+    }
+
+    // "cena" y "casual" usan exactamente el mismo filtro (todo menos deporte
+    // y bano) — antes se mandaba la lista completa dos veces, que era lo que
+    // reventaba el limite de tokens por minuto de Groq.
+    const nonGymItems = inventory.filter((item) => !gymTypes.includes(item.tipo) && !swimTypes.includes(item.tipo))
+    const gymItems = inventory.filter((item) => gymTypes.includes(item.tipo) || item.tipo === 'footwear' || item.tipo === 'accessory' || item.tipo === 'other')
+
+    const tempRule = tempC !== null
+      ? `Temperatura actual: ${tempC}C. ${tempToSeason(tempC)}. Adapta la eleccion al clima (${tempC < 15 ? 'prioriza outerwear y capas' : tempC > 25 ? 'evita outerwear, prioriza ropa ligera' : 'capas opcionales'}).`
+      : ''
+
+    // 3. Un único prompt: pide 1 outfit por cada ocasión que falte
+    const missing = DAILY_OCCASIONS.filter((o) => !cachedByOccasion[o])
+    const missingNonGym = missing.filter((o) => o !== 'gym')
+
+    const nonGymStructureRule = `DEBE incluir: o bien 1 "top" + 1 "bottom", o bien 1 "fullbody" (vestido/mono). Opcional: 1 "outerwear" si el clima lo requiere, y maximo 1 "footwear" y 1 "accessory". PROHIBIDO mezclar swimwear. PROHIBIDO outfit sin parte de abajo.`
+    const gymStructureRule = `DEBE incluir: 1 prenda deportiva (tipo sportswear) + opcionalmente calzado deportivo. NO uses top/bottom normales ni accesorios innecesarios.`
+
+    const sections: string[] = []
+    if (missingNonGym.length > 0) {
+      sections.push(`OCASIONES "${missingNonGym.join('" y "')}" (misma lista de prendas para ambas, pero cada una es un outfit DISTINTO):
+Prendas disponibles: ${JSON.stringify(toCompact(nonGymItems))}
+Regla de estructura: ${nonGymStructureRule}`)
+    }
+    if (missing.includes('gym')) {
+      sections.push(`OCASION "gym":
+Prendas disponibles: ${JSON.stringify(toCompact(gymItems))}
+Regla de estructura: ${gymStructureRule}`)
+    }
+
+    const prompt = `Eres un estilista personal experto en moda. Genera EXACTAMENTE 1 outfit para cada una de estas ocasiones: ${missing.join(', ')}. Usa solo prendas de la lista correspondiente (formato prenda: id, n=nombre, t=tipo, c=colores).
+
+${sections.join('\n\n')}
+
+CLIMA: ${weatherDesc}
+${tempRule}
+
+OTRAS REGLAS:
+- Usa SOLO ids de prendas de la lista correspondiente a esa ocasion
+- 3-5 prendas por outfit maximo
+- El "reason" explica brevemente por que combina bien y es apropiado (max 60 palabras)
+
+Responde UNICAMENTE con JSON valido, sin texto extra ni markdown, con esta forma exacta:
+[{"occasion":"casual","name":"nombre creativo","item_ids":["uuid1","uuid2"],"reason":"..."}]
+(incluye solo las ocasiones pedidas: ${missing.join(', ')})`
+
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('GROQ_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'Eres un estilista de moda. Respondes SOLO con JSON valido, sin texto extra, sin bloques de codigo markdown.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        max_tokens: 800,
+        temperature: 0.7,
+      }),
+    })
+
+    if (!groqRes.ok) {
+      const err = await groqRes.text()
+      throw new Error(`Groq API error: ${err}`)
+    }
+
+    const groqData = await groqRes.json()
+    const rawText = groqData.choices?.[0]?.message?.content ?? '[]'
+    const jsonMatch = rawText.match(/\[[\s\S]*\]/)
+    if (!jsonMatch) throw new Error('La IA no devolvio JSON valido')
+    const generated = JSON.parse(jsonMatch[0])
+
+    // Validacion + preparar filas a insertar.
+    // Nota: antes se descartaba el outfit entero si no encontraba un tipo
+    // "bottom"/"top"/"fullbody" segun classifyCategory(), pero esa regex
+    // depende de que el usuario nombre sus categorias de forma "estandar"
+    // (p.ej. "Pantalones"). Si sus categorias tienen otros nombres, la
+    // deteccion de tipo falla y el outfit se descartaba silenciosamente
+    // SIEMPRE, dejando ese hueco vacio dia tras dia. Ahora solo exigimos
+    // que tenga al menos 2 prendas validas del armario; la estructura
+    // (top+bottom, etc.) ya se le pide a la IA en el prompt.
+    const rowsToInsert: any[] = []
+    for (const occasion of missing) {
+      const outfit = generated.find((o: any) => o.occasion === occasion)
+      const validIds = Array.isArray(outfit?.item_ids)
+        ? outfit.item_ids.filter((id: string) => clothesMap[id])
+        : []
+      if (!outfit || validIds.length < 2) continue
+
+      rowsToInsert.push({
+        user_id: user.id,
+        suggestion_date: today,
+        occasion,
+        name: outfit.name,
+        reason: outfit.reason,
+        item_ids: validIds,
+        weather: weatherDesc,
+      })
+    }
+
+    if (rowsToInsert.length > 0) {
+      const { error: upsertError } = await supabase
+        .from('daily_outfit_suggestions')
+        .upsert(rowsToInsert, { onConflict: 'user_id,suggestion_date,occasion' })
+      if (upsertError) throw new Error(upsertError.message)
+    }
+
+    // 4. Releer todo (cacheado + recien generado) y devolver los 3
+    const { data: finalRows } = await supabase
+      .from('daily_outfit_suggestions')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('suggestion_date', today)
+
+    const finalByOccasion: Record<string, any> = {}
+    for (const row of finalRows ?? []) finalByOccasion[row.occasion] = row
+
+    const outfits = DAILY_OCCASIONS
+      .filter((o) => finalByOccasion[o])
+      .map((occasion) => {
+        const row = finalByOccasion[occasion]
+        return {
+          occasion,
+          name: row.name,
+          reason: row.reason,
+          weather: row.weather,
+          items: (row.item_ids || []).map((id: string) => clothesMap[id]).filter(Boolean),
+        }
+      })
+
+    if (outfits.length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'La IA no genero outfits validos. Intenta de nuevo.' }),
+        { status: 400, headers: corsHeaders }
+      )
+    }
+
+    return new Response(JSON.stringify({ outfits }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+})

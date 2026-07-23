@@ -1,4 +1,4 @@
--- Guarda las valoraciones de las recomendaciones de Ara.
+-- Guarda las valoraciones de las recomendaciones de Ada.
 -- Cada fila = una respuesta valorada (positiva o negativa) con las prendas sugeridas.
 create table if not exists public.stylist_feedback (
   id          uuid        primary key default uuid_generate_v4(),

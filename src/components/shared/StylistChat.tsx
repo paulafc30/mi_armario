@@ -228,7 +228,7 @@ export default function StylistChat() {
     if (open && messages.length === 0) {
       setMessages([{
         role: 'assistant',
-        content: 'Hola! Soy Ara, tu asesora de moda personal. Preguntame que ponerte hoy, para una ocasion especial, o cualquier duda sobre tu armario.',
+        content: 'Hola! Soy Ada, tu asesora de moda personal. Preguntame que ponerte hoy, para una ocasion especial, o cualquier duda sobre tu armario.',
       }])
     }
     if (open) setTimeout(() => inputRef.current?.focus(), 100)
@@ -369,7 +369,7 @@ export default function StylistChat() {
           open && 'hidden',
         )}
         style={{ width: '56px', height: '56px' }}
-        title="Ara - Asesora de moda"
+        title="Ada - Asesora de moda"
       >
         <RobotChatIcon className="w-8 h-8" />
       </button>
@@ -389,7 +389,7 @@ export default function StylistChat() {
                 <RobotChatIcon className="w-6 h-6 text-white" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-ink text-sm">Ara</p>
+                <p className="font-semibold text-ink text-sm">Ada</p>
                 <p className="text-xs text-muted truncate">
                   {weather || 'Asesora de moda personal'}
                 </p>

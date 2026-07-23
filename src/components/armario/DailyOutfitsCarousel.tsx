@@ -1,0 +1,224 @@
+import { useState } from 'react'
+import { Sun, Dumbbell, Moon, Loader2, Shirt, Sparkles, BookmarkPlus, Check, RefreshCw } from 'lucide-react'
+import { useDailyOutfits, type DailyOccasion, type DailyOutfit } from '@/hooks/useDailyOutfits'
+import { useAuth } from '@/hooks/useAuth'
+import { useCreateOutfit } from '@/hooks/useOutfits'
+import { cx } from '@/lib/utils'
+
+const DAILY_OCCASIONS: DailyOccasion[] = ['casual', 'gym', 'cena']
+
+const OCCASION_META: Record<DailyOccasion, { label: string; icon: typeof Sun }> = {
+  casual: { label: 'Casual', icon: Sun },
+  gym: { label: 'Gym', icon: Dumbbell },
+  cena: { label: 'Salir de noche', icon: Moon },
+}
+
+/** Collage a pantalla completa con las prendas del outfit, estilo "story". */
+function OutfitCollage({ items }: { items: DailyOutfit['items'] }) {
+  const shown = items.slice(0, 4)
+  const extra = items.length - shown.length
+
+  // Fondo claro fijo (no el color de la prenda) — evita que el hueco que
+  // deja object-contain se vea negro cuando la prenda es oscura.
+  const CELL_BG = '#F3EDE8'
+
+  function Photo({ item, className = '' }: { item: DailyOutfit['items'][number]; className?: string }) {
+    if (item.image_url) {
+      return (
+        <div
+          className={cx('w-full h-full flex items-center justify-center p-2', className)}
+          style={{ backgroundColor: CELL_BG }}
+        >
+          {/* object-contain (no cover): se ve la prenda entera, sin recortarla */}
+          <img
+            src={item.image_url}
+            alt={item.name}
+            className="max-w-full max-h-full object-contain rounded-[8px]"
+          />
+        </div>
+      )
+    }
+    return (
+      <div
+        className={cx('w-full h-full flex flex-col items-center justify-center gap-1.5 p-2', className)}
+        style={{ backgroundColor: CELL_BG }}
+      >
+        <Shirt className="w-8 h-8 text-ink/30" />
+        <span className="text-[10px] text-ink/50 text-center leading-tight line-clamp-2">{item.name}</span>
+      </div>
+    )
+  }
+
+  if (shown.length === 0) {
+    return <div className="w-full h-full bg-surface-soft" />
+  }
+  if (shown.length === 1) {
+    return <Photo item={shown[0]} />
+  }
+  if (shown.length === 2) {
+    return (
+      <div className="w-full h-full grid grid-cols-2 gap-0.5">
+        <Photo item={shown[0]} />
+        <Photo item={shown[1]} />
+      </div>
+    )
+  }
+  if (shown.length === 3) {
+    return (
+      <div className="w-full h-full grid grid-cols-2 gap-0.5">
+        <Photo item={shown[0]} className="row-span-2" />
+        <div className="grid grid-rows-2 gap-0.5 h-full">
+          <Photo item={shown[1]} />
+          <Photo item={shown[2]} />
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-0.5">
+      {shown.map((item, i) => (
+        <div key={item.id} className="relative">
+          <Photo item={item} />
+          {i === 3 && extra > 0 && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <span className="text-white text-lg font-semibold">+{extra}</span>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function DailyOutfitCard({ outfit }: { outfit: DailyOutfit }) {
+  const meta = OCCASION_META[outfit.occasion]
+  const Icon = meta.icon
+  const { user } = useAuth()
+  const createOutfit = useCreateOutfit()
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = () => {
+    if (!user || saved) return
+    createOutfit.mutate(
+      { user_id: user.id, name: outfit.name, clothe_ids: outfit.items.map((i) => i.id) },
+      { onSuccess: () => setSaved(true) }
+    )
+  }
+
+  return (
+    <div className="relative w-full aspect-[3/4.5] rounded-3xl overflow-hidden shadow-soft">
+      <div className="absolute inset-0" style={{ backgroundColor: '#F3EDE8' }}>
+        <OutfitCollage items={outfit.items} />
+      </div>
+
+      {/* Degradados para legibilidad del texto arriba y abajo */}
+      <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 via-black/50 to-transparent pointer-events-none" />
+
+      {/* Cabecera: ocasión + clima */}
+      <div className="absolute top-3 inset-x-3 flex items-center justify-between">
+        <span className="flex items-center gap-1 text-[11px] font-semibold text-white bg-white/20 backdrop-blur-sm border border-white/30 px-2.5 py-1 rounded-full">
+          <Icon className="w-3.5 h-3.5" />
+          {meta.label}
+        </span>
+        {outfit.weather && (
+          <span className="text-[11px] font-medium text-white bg-white/20 backdrop-blur-sm border border-white/30 px-2 py-1 rounded-full">
+            {outfit.weather.split(',')[0]}
+          </span>
+        )}
+      </div>
+
+      {/* Pie: nombre, motivo y guardar */}
+      <div className="absolute bottom-0 inset-x-0 p-4 space-y-2">
+        <p className="text-lg font-semibold text-white leading-tight">{outfit.name}</p>
+        <p className="text-xs text-white/80 leading-relaxed line-clamp-2">{outfit.reason}</p>
+        <button
+          onClick={handleSave}
+          disabled={saved || createOutfit.isPending}
+          className={cx(
+            'w-full flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-2 border transition backdrop-blur-sm',
+            saved
+              ? 'bg-green-500/20 border-green-300/40 text-white cursor-default'
+              : 'bg-white/15 border-white/30 text-white hover:bg-white/25'
+          )}
+        >
+          {saved ? (
+            <>
+              <Check className="w-3.5 h-3.5" /> Guardado en Outfits
+            </>
+          ) : createOutfit.isPending ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
+            </>
+          ) : (
+            <>
+              <BookmarkPlus className="w-3.5 h-3.5" /> Guardar en Outfits
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function MissingOutfitCard({ occasion, onRetry, retrying }: { occasion: DailyOccasion; onRetry: () => void; retrying: boolean }) {
+  const meta = OCCASION_META[occasion]
+  const Icon = meta.icon
+  return (
+    <div className="relative w-full aspect-[3/4.5] rounded-3xl overflow-hidden border border-dashed border-line bg-surface-soft flex flex-col items-center justify-center gap-3 p-4 text-center">
+      <Icon className="w-8 h-8 text-muted/50" />
+      <div>
+        <p className="text-sm font-medium text-ink">{meta.label}</p>
+        <p className="text-xs text-muted mt-0.5">No se pudo generar este outfit hoy.</p>
+      </div>
+      <button
+        onClick={onRetry}
+        disabled={retrying}
+        className="flex items-center gap-1.5 text-xs font-medium rounded-xl px-3 py-1.5 border border-brand-200 text-brand-700 bg-transparent hover:bg-brand-soft transition"
+      >
+        {retrying ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+        Reintentar
+      </button>
+    </div>
+  )
+}
+
+export default function DailyOutfitsCarousel() {
+  const { data: outfits, isLoading, isFetching, error, refetch } = useDailyOutfits()
+
+  const byOccasion = Object.fromEntries((outfits ?? []).map((o) => [o.occasion, o]))
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-muted flex items-center gap-1.5">
+        <Sparkles className="w-3.5 h-3.5 text-brand-700" />
+        Outfit que te sugiero para hoy
+      </p>
+
+      {isLoading && (
+        <div className="card p-6 flex items-center justify-center gap-2 text-muted">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-xs">Preparando tus looks de hoy...</span>
+        </div>
+      )}
+
+      {error && !isLoading && (
+        <div className="card p-4 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+          No se pudieron cargar los outfits de hoy: {(error as Error).message}
+        </div>
+      )}
+
+      {!isLoading && !error && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {DAILY_OCCASIONS.map((occasion) =>
+            byOccasion[occasion] ? (
+              <DailyOutfitCard key={occasion} outfit={byOccasion[occasion]} />
+            ) : (
+              <MissingOutfitCard key={occasion} occasion={occasion} onRetry={() => refetch()} retrying={isFetching} />
+            )
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
