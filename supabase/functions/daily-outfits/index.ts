@@ -104,9 +104,12 @@ Deno.serve(async (req: Request) => {
         const row = cachedByOccasion[occasion]
         return {
           occasion,
+          date: row.suggestion_date,
           name: row.name,
           reason: row.reason,
           weather: row.weather,
+          rating: row.rating ?? null,
+          dislikedItemIds: row.disliked_item_ids ?? [],
           items: (row.item_ids || []).map((id: string) => clothesMap[id]).filter(Boolean),
         }
       })
@@ -180,19 +183,80 @@ Deno.serve(async (req: Request) => {
     const missing = DAILY_OCCASIONS.filter((o) => !cachedByOccasion[o])
     const missingNonGym = missing.filter((o) => o !== 'gym')
 
+    // Historial de días anteriores (no de hoy) por ocasión: sirve para (a)
+    // no repetir la combinación del último día y (b) aprender de las
+    // valoraciones (👍/👎) que la usuaria le puso a outfits anteriores.
+    const { data: history } = await supabase
+      .from('daily_outfit_suggestions')
+      .select('suggestion_date, occasion, item_ids, rating, disliked_item_ids')
+      .eq('user_id', user.id)
+      .neq('suggestion_date', today)
+      .order('suggestion_date', { ascending: false })
+      .limit(90)
+
+    function namesOf(itemIds: string[]): string {
+      return itemIds
+        .map((id) => clothesMap[id]?.name)
+        .filter(Boolean)
+        .join(' + ')
+    }
+
+    function historyNoteFor(occasion: DailyOccasion): string {
+      const rows = (history ?? []).filter((h) => h.occasion === occasion)
+      if (rows.length === 0) return ''
+
+      const lines: string[] = []
+      const last = rows[0] // ordenado desc por fecha, el primero es el más reciente
+      const lastNames = namesOf(last.item_ids || [])
+      if (lastNames) lines.push(`Ultima vez (${last.suggestion_date}) se sugirio: ${lastNames}. NO repitas exactamente esta misma combinacion.`)
+
+      const liked = rows.filter((h) => h.rating === 'positive').slice(0, 4)
+        .map((h) => namesOf(h.item_ids || [])).filter(Boolean)
+      if (liked.length > 0) lines.push(`Combinaciones que le gustaron antes (puedes inspirarte en el estilo): ${liked.join(' | ')}.`)
+
+      const negativeRows = rows.filter((h) => h.rating === 'negative').slice(0, 4)
+
+      // Si señaló prendas concretas que no combinaban, es una pista mucho más
+      // precisa que descartar todo el outfit: la prenda en sí puede estar
+      // bien, lo que falló es ESA combinacion con ESAS otras prendas.
+      const specificFlags = negativeRows
+        .filter((h) => Array.isArray(h.disliked_item_ids) && h.disliked_item_ids.length > 0)
+        .map((h) => {
+          const badNames = h.disliked_item_ids!.map((id: string) => clothesMap[id]?.name).filter(Boolean)
+          const restNames = (h.item_ids || []).filter((id: string) => !h.disliked_item_ids!.includes(id))
+            .map((id: string) => clothesMap[id]?.name).filter(Boolean)
+          if (badNames.length === 0) return null
+          return restNames.length > 0
+            ? `"${badNames.join(', ')}" no combinaba bien con "${restNames.join(' + ')}"`
+            : `"${badNames.join(', ')}" no funcionó en ese outfit`
+        })
+        .filter(Boolean)
+      if (specificFlags.length > 0) lines.push(`Prendas que fallaron en combinaciones anteriores (evita repetir justo esas combinaciones, pero la prenda en si puede usarse de otra forma): ${specificFlags.join('; ')}.`)
+
+      // El resto de negativos sin prenda señalada: nota genérica de siempre.
+      const genericDisliked = negativeRows
+        .filter((h) => !Array.isArray(h.disliked_item_ids) || h.disliked_item_ids.length === 0)
+        .map((h) => namesOf(h.item_ids || [])).filter(Boolean)
+      if (genericDisliked.length > 0) lines.push(`Combinaciones que NO le gustaron en general (evita algo muy similar): ${genericDisliked.join(' | ')}.`)
+
+      return lines.length > 0 ? `Historial para "${occasion}": ${lines.join(' ')}` : ''
+    }
+
     const nonGymStructureRule = `DEBE incluir: o bien 1 "top" + 1 "bottom", o bien 1 "fullbody" (vestido/mono). Opcional: 1 "outerwear" si el clima lo requiere, y maximo 1 "footwear" y 1 "accessory". PROHIBIDO mezclar swimwear. PROHIBIDO outfit sin parte de abajo.`
     const gymStructureRule = `DEBE incluir: 1 prenda deportiva (tipo sportswear) + opcionalmente calzado deportivo. NO uses top/bottom normales ni accesorios innecesarios.`
 
     const sections: string[] = []
     if (missingNonGym.length > 0) {
+      const historyNotes = missingNonGym.map(historyNoteFor).filter(Boolean).join('\n')
       sections.push(`OCASIONES "${missingNonGym.join('" y "')}" (misma lista de prendas para ambas, pero cada una es un outfit DISTINTO):
 Prendas disponibles: ${JSON.stringify(toCompact(nonGymItems))}
-Regla de estructura: ${nonGymStructureRule}`)
+Regla de estructura: ${nonGymStructureRule}${historyNotes ? `\n${historyNotes}` : ''}`)
     }
     if (missing.includes('gym')) {
+      const historyNotes = historyNoteFor('gym')
       sections.push(`OCASION "gym":
 Prendas disponibles: ${JSON.stringify(toCompact(gymItems))}
-Regla de estructura: ${gymStructureRule}`)
+Regla de estructura: ${gymStructureRule}${historyNotes ? `\n${historyNotes}` : ''}`)
     }
 
     const prompt = `Eres un estilista personal experto en moda. Genera EXACTAMENTE 1 outfit para cada una de estas ocasiones: ${missing.join(', ')}. Usa solo prendas de la lista correspondiente (formato prenda: id, n=nombre, t=tipo, c=colores).
@@ -293,9 +357,12 @@ Responde UNICAMENTE con JSON valido, sin texto extra ni markdown, con esta forma
         const row = finalByOccasion[occasion]
         return {
           occasion,
+          date: row.suggestion_date,
           name: row.name,
           reason: row.reason,
           weather: row.weather,
+          rating: row.rating ?? null,
+          dislikedItemIds: row.disliked_item_ids ?? [],
           items: (row.item_ids || []).map((id: string) => clothesMap[id]).filter(Boolean),
         }
       })

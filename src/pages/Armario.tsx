@@ -113,7 +113,7 @@ export default function Armario() {
           {tab === 'outfits' && (
             <>
               <button onClick={() => setOutfitSuggestOpen(true)} className="btn-secondary" title="Sugerir outfit con IA">
-                <Sparkles className="w-4 h-4" />
+                <Sparkles className="w-4 h-4" /> Sugerir outfit
               </button>
               <button onClick={() => { setOutfitEditing(null); setOutfitFormOpen(true) }} className="btn-primary">
                 <Plus className="w-4 h-4" /> Outfit

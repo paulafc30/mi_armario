@@ -1,7 +1,9 @@
 import { useState } from 'react'
-import { X, Sparkles, Loader2, RefreshCw, Shirt } from 'lucide-react'
+import { X, Sparkles, Loader2, RefreshCw, Shirt, BookmarkPlus, Check } from 'lucide-react'
 import { cx } from '@/lib/utils'
 import { useOutfitSuggestion, type SuggestedOccasion, type SuggestedOutfit } from '@/hooks/useOutfitSuggestion'
+import { useAuth } from '@/hooks/useAuth'
+import { useCreateOutfit } from '@/hooks/useOutfits'
 
 const OCCASIONS: { value: SuggestedOccasion; label: string; icon: string }[] = [
   { value: 'casual', label: 'Casual', icon: 'ti-sun' },
@@ -32,6 +34,18 @@ function ItemThumb({ item }: { item: { name: string; image_url: string | null; c
 }
 
 function OutfitCard({ outfit, index }: { outfit: SuggestedOutfit; index: number }) {
+  const { user } = useAuth()
+  const createOutfit = useCreateOutfit()
+  const [saved, setSaved] = useState(false)
+
+  const handleSave = () => {
+    if (!user || saved) return
+    createOutfit.mutate(
+      { user_id: user.id, name: outfit.name, clothe_ids: outfit.items.map((i) => i.id) },
+      { onSuccess: () => setSaved(true) }
+    )
+  }
+
   return (
     <div className="card p-3 space-y-2">
       <div className="flex items-center justify-between">
@@ -51,6 +65,30 @@ function OutfitCard({ outfit, index }: { outfit: SuggestedOutfit; index: number 
         )}
       </div>
       <p className="text-xs text-muted leading-relaxed">{outfit.reason}</p>
+      <button
+        onClick={handleSave}
+        disabled={saved || createOutfit.isPending}
+        className={cx(
+          'w-full flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-1.5 border transition',
+          saved
+            ? 'bg-green-50 dark:bg-green-500/10 border-green-200 text-green-700 cursor-default'
+            : 'btn-secondary'
+        )}
+      >
+        {saved ? (
+          <>
+            <Check className="w-3.5 h-3.5" /> Guardado en Outfits
+          </>
+        ) : createOutfit.isPending ? (
+          <>
+            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
+          </>
+        ) : (
+          <>
+            <BookmarkPlus className="w-3.5 h-3.5" /> Guardar en Outfits
+          </>
+        )}
+      </button>
     </div>
   )
 }

@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { formatISODate } from '@/lib/calendar'
 
 export type DailyOccasion = 'casual' | 'gym' | 'cena'
+export type DailyOutfitRating = 'positive' | 'negative'
 
 export interface DailyOutfitItem {
   id: string
@@ -14,9 +15,14 @@ export interface DailyOutfitItem {
 
 export interface DailyOutfit {
   occasion: DailyOccasion
+  /** Fecha (YYYY-MM-DD) tal cual la guardó el backend — usarla para puntuar, no recalcularla en el cliente. */
+  date: string
   name: string
   reason: string
   weather: string
+  rating: DailyOutfitRating | null
+  /** IDs de las prendas señaladas como "esta no combinaba" en un rating negativo. */
+  dislikedItemIds: string[]
   items: DailyOutfitItem[]
 }
 
@@ -77,5 +83,39 @@ export function useDailyOutfits() {
     },
     staleTime: 1000 * 60 * 60, // 1h — igualmente cambia de key al cambiar el día
     retry: false,
+  })
+}
+
+/**
+ * Puntúa (o quita la puntuación de) uno de los outfits diarios ya
+ * generados. Se guarda en la propia fila de `daily_outfit_suggestions`
+ * (columna `rating`) y `daily-outfits` la usa en el próximo día para
+ * sesgar la generación hacia lo que gustó y evitar lo que no.
+ */
+export function useRateDailyOutfit() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: {
+      date: string
+      occasion: DailyOccasion
+      rating: DailyOutfitRating | null
+      /** Prendas concretas señaladas como "esta no combinaba" (solo aplica con rating negativo). */
+      dislikedItemIds?: string[]
+    }) => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('No hay sesion activa')
+
+      const { error } = await supabase
+        .from('daily_outfit_suggestions')
+        .update({
+          rating: input.rating,
+          disliked_item_ids: input.rating === 'negative' ? (input.dislikedItemIds ?? []) : [],
+        })
+        .eq('user_id', user.id)
+        .eq('suggestion_date', input.date)
+        .eq('occasion', input.occasion)
+      if (error) throw error
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['daily-outfits'] }),
   })
 }

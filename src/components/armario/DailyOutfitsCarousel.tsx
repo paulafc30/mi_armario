@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Sun, Dumbbell, Moon, Loader2, Shirt, Sparkles, BookmarkPlus, Check, RefreshCw } from 'lucide-react'
-import { useDailyOutfits, type DailyOccasion, type DailyOutfit } from '@/hooks/useDailyOutfits'
+import { Sun, Dumbbell, Moon, Loader2, Shirt, Sparkles, BookmarkPlus, Check, RefreshCw, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { useDailyOutfits, useRateDailyOutfit, type DailyOccasion, type DailyOutfit } from '@/hooks/useDailyOutfits'
 import { useAuth } from '@/hooks/useAuth'
 import { useCreateOutfit } from '@/hooks/useOutfits'
 import { cx } from '@/lib/utils'
@@ -95,7 +95,10 @@ function DailyOutfitCard({ outfit }: { outfit: DailyOutfit }) {
   const Icon = meta.icon
   const { user } = useAuth()
   const createOutfit = useCreateOutfit()
+  const rateOutfit = useRateDailyOutfit()
   const [saved, setSaved] = useState(false)
+  const [flagging, setFlagging] = useState(false)
+  const [flaggedIds, setFlaggedIds] = useState<string[]>([])
 
   const handleSave = () => {
     if (!user || saved) return
@@ -103,6 +106,32 @@ function DailyOutfitCard({ outfit }: { outfit: DailyOutfit }) {
       { user_id: user.id, name: outfit.name, clothe_ids: outfit.items.map((i) => i.id) },
       { onSuccess: () => setSaved(true) }
     )
+  }
+
+  const handleThumbsUp = () => {
+    const next = outfit.rating === 'positive' ? null : 'positive'
+    setFlagging(false)
+    rateOutfit.mutate({ date: outfit.date, occasion: outfit.occasion, rating: next })
+  }
+
+  const handleThumbsDown = () => {
+    if (outfit.rating === 'negative') {
+      // Ya estaba marcado negativo — tocar de nuevo lo quita.
+      rateOutfit.mutate({ date: outfit.date, occasion: outfit.occasion, rating: null })
+      return
+    }
+    // Antes de guardar el negativo, preguntamos qué prenda concreta falló.
+    setFlaggedIds([])
+    setFlagging(true)
+  }
+
+  const toggleFlag = (id: string) => {
+    setFlaggedIds((ids) => ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id])
+  }
+
+  const confirmNegative = () => {
+    rateOutfit.mutate({ date: outfit.date, occasion: outfit.occasion, rating: 'negative', dislikedItemIds: flaggedIds })
+    setFlagging(false)
   }
 
   return (
@@ -113,7 +142,7 @@ function DailyOutfitCard({ outfit }: { outfit: DailyOutfit }) {
 
       {/* Degradados para legibilidad del texto arriba y abajo */}
       <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 via-black/50 to-transparent pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/90 via-black/55 to-transparent pointer-events-none" />
 
       {/* Cabecera: ocasión + clima */}
       <div className="absolute top-3 inset-x-3 flex items-center justify-between">
@@ -128,34 +157,108 @@ function DailyOutfitCard({ outfit }: { outfit: DailyOutfit }) {
         )}
       </div>
 
-      {/* Pie: nombre, motivo y guardar */}
-      <div className="absolute bottom-0 inset-x-0 p-4 space-y-2">
-        <p className="text-lg font-semibold text-white leading-tight">{outfit.name}</p>
-        <p className="text-xs text-white/80 leading-relaxed line-clamp-2">{outfit.reason}</p>
-        <button
-          onClick={handleSave}
-          disabled={saved || createOutfit.isPending}
-          className={cx(
-            'w-full flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-2 border transition backdrop-blur-sm',
-            saved
-              ? 'bg-green-500/20 border-green-300/40 text-white cursor-default'
-              : 'bg-white/15 border-white/30 text-white hover:bg-white/25'
-          )}
-        >
-          {saved ? (
-            <>
-              <Check className="w-3.5 h-3.5" /> Guardado en Outfits
-            </>
-          ) : createOutfit.isPending ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
-            </>
-          ) : (
-            <>
-              <BookmarkPlus className="w-3.5 h-3.5" /> Guardar en Outfits
-            </>
-          )}
-        </button>
+      {/* Pie: nombre, motivo, puntuar y guardar */}
+      <div className="absolute bottom-0 inset-x-0 p-4 space-y-2.5">
+        <div>
+          <p className="text-lg font-semibold text-white leading-tight">{outfit.name}</p>
+          <p className="text-xs text-white/80 leading-relaxed line-clamp-2 mt-0.5">{outfit.reason}</p>
+        </div>
+
+        {flagging ? (
+          <div className="space-y-2 bg-black/40 backdrop-blur-sm rounded-xl p-2.5 border border-white/20">
+            <p className="text-[11px] text-white/90 font-medium">¿Qué prenda no encajaba? (opcional)</p>
+            <div className="flex flex-wrap gap-1.5">
+              {outfit.items.map((item) => {
+                const isFlagged = flaggedIds.includes(item.id)
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => toggleFlag(item.id)}
+                    className={cx(
+                      'text-[11px] font-medium px-2 py-1 rounded-full border transition',
+                      isFlagged
+                        ? 'bg-red-500/80 border-red-300/60 text-white'
+                        : 'bg-white/10 border-white/30 text-white hover:bg-white/20'
+                    )}
+                  >
+                    {item.name}
+                  </button>
+                )
+              })}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={confirmNegative}
+                disabled={rateOutfit.isPending}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg py-1.5 bg-white/90 text-neutral-900 hover:bg-white transition"
+              >
+                {rateOutfit.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Confirmar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setFlagging(false)}
+                className="text-xs font-medium rounded-lg py-1.5 px-3 text-white/80 hover:text-white transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={handleThumbsUp}
+              disabled={rateOutfit.isPending}
+              title="Me gusta este outfit"
+              className={cx(
+                'flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-2 px-3 border transition backdrop-blur-sm',
+                outfit.rating === 'positive'
+                  ? 'bg-green-500/80 border-green-300/60 text-white'
+                  : 'bg-white/15 border-white/30 text-white hover:bg-white/25'
+              )}
+            >
+              <ThumbsUp className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleThumbsDown}
+              disabled={rateOutfit.isPending}
+              title="No me gusta este outfit"
+              className={cx(
+                'flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-2 px-3 border transition backdrop-blur-sm',
+                outfit.rating === 'negative'
+                  ? 'bg-red-500/80 border-red-300/60 text-white'
+                  : 'bg-white/15 border-white/30 text-white hover:bg-white/25'
+              )}
+            >
+              <ThumbsDown className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saved || createOutfit.isPending}
+              className={cx(
+                'flex-1 flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-2 border transition backdrop-blur-sm',
+                saved
+                  ? 'bg-green-500/20 border-green-300/40 text-white cursor-default'
+                  : 'bg-white/15 border-white/30 text-white hover:bg-white/25'
+              )}
+            >
+              {saved ? (
+                <>
+                  <Check className="w-3.5 h-3.5" /> Guardado
+                </>
+              ) : createOutfit.isPending ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <>
+                  <BookmarkPlus className="w-3.5 h-3.5" /> Guardar
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
