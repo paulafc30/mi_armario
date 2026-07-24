@@ -82,26 +82,34 @@ export default function ClotheDetail({
 
         {(() => {
           const clotheColors = clothe.colors ?? (clothe.color ? [clothe.color] : [])
+          const clotheHexes = clothe.color_hexes ?? []
           const hasAny = clothe.brand || clothe.size || clotheColors.length > 0
           if (!hasAny) return null
           return (
             <div className="flex flex-wrap gap-1.5">
               {clothe.brand && <span className="chip bg-surface-soft text-ink/80">{clothe.brand}</span>}
               {clothe.size && <span className="chip bg-surface-soft text-ink/80">Talla {clothe.size}</span>}
-              {clotheColors.map((c) => (
-                <span key={c} className="chip bg-surface-soft text-ink/80">
-                  <span
-                    className="w-3 h-3 rounded-full border border-line inline-block"
-                    style={{
-                      background:
-                        colorHexByName(c) === 'multicolor'
-                          ? 'conic-gradient(from 0deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ec4899, #ef4444)'
-                          : colorHexByName(c) ?? '#999',
-                    }}
-                  />
-                  {c}
-                </span>
-              ))}
+              {clotheColors.map((c, i) => {
+                // Preferimos el hex exacto guardado (slider de tono); si la
+                // prenda es antigua y no lo tiene, caemos al hex de familia.
+                const exactHex = clotheHexes[i]
+                const familyHex = colorHexByName(c)
+                const hex = exactHex ?? familyHex
+                return (
+                  <span key={`${c}-${i}`} className="chip bg-surface-soft text-ink/80">
+                    <span
+                      className="w-3 h-3 rounded-full border border-line inline-block"
+                      style={{
+                        background:
+                          familyHex === 'multicolor'
+                            ? 'conic-gradient(from 0deg, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ec4899, #ef4444)'
+                            : hex ?? '#999',
+                      }}
+                    />
+                    {c}
+                  </span>
+                )
+              })}
             </div>
           )
         })()}

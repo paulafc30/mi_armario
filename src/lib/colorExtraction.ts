@@ -14,7 +14,7 @@
  *  si no pudo determinar uno (CORS, imagen vacía, etc.).
  */
 
-import { CLOTHING_COLORS } from '@/components/shared/ColorPicker'
+import { nearestPaletteName } from '@/lib/colorFamily'
 
 interface RGB { r: number; g: number; b: number }
 
@@ -23,10 +23,14 @@ export async function extractDominantColorName(imageUrl: string): Promise<string
     const img = await loadImage(imageUrl)
     const rgb = computeDominantRGB(img)
     if (!rgb) return null
-    return nearestPaletteName(rgb)
+    return nearestPaletteName(`#${toHex(rgb.r)}${toHex(rgb.g)}${toHex(rgb.b)}`)
   } catch {
     return null
   }
+}
+
+function toHex(n: number): string {
+  return Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0')
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -117,37 +121,3 @@ function computeDominantRGB(img: HTMLImageElement): RGB | null {
   }
 }
 
-function hexToRgb(hex: string): RGB | null {
-  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
-  if (!m) return null
-  return { r: parseInt(m[1], 16), g: parseInt(m[2], 16), b: parseInt(m[3], 16) }
-}
-
-/** Distancia perceptual aproximada (redmean) — más realista que la euclidiana cruda. */
-function colorDistance(a: RGB, b: RGB): number {
-  const rMean = (a.r + b.r) / 2
-  const dr = a.r - b.r
-  const dg = a.g - b.g
-  const db = a.b - b.b
-  return Math.sqrt(
-    (2 + rMean / 256) * dr * dr +
-    4 * dg * dg +
-    (2 + (255 - rMean) / 256) * db * db
-  )
-}
-
-function nearestPaletteName(rgb: RGB): string | null {
-  let bestName: string | null = null
-  let bestDist = Infinity
-  for (const c of CLOTHING_COLORS) {
-    if (c.hex === 'multicolor') continue
-    const target = hexToRgb(c.hex)
-    if (!target) continue
-    const dist = colorDistance(rgb, target)
-    if (dist < bestDist) {
-      bestDist = dist
-      bestName = c.name
-    }
-  }
-  return bestName
-}

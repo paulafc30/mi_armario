@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import Modal from '@/components/shared/Modal'
 import MultiImagePicker, { PickerImage, previewOf } from '@/components/shared/MultiImagePicker'
-import ColorPicker, { colorHexByName } from '@/components/shared/ColorPicker'
+import ColorPicker, { type ColorSelection } from '@/components/shared/ColorPicker'
+import { colorHexByName } from '@/lib/colorPalette'
 import Combobox from '@/components/shared/Combobox'
 import DescriptionModal from '@/components/venta/DescriptionModal'
 import { useCategories } from '@/hooks/useCategories'
@@ -59,7 +60,9 @@ export default function ClotheForm({
   const [selectedSeasonIds, setSelectedSeasonIds] = useState<string[]>([])
   const [brand, setBrand] = useState('')
   const [size, setSize] = useState('')
-  const [colors, setColors] = useState<string[]>([])
+  const [colorSelections, setColorSelections] = useState<ColorSelection[]>([])
+  const colorNames = colorSelections.map((c) => c.name)
+  const colorHexes = colorSelections.map((c) => c.hex)
   const [material, setMaterial] = useState('')
   const [tags, setTags] = useState('')
   const [notes, setNotes] = useState('')
@@ -81,7 +84,11 @@ export default function ClotheForm({
       setSelectedSeasonIds(existingSeasonIds)
       setBrand(clothe.brand ?? '')
       setSize(clothe.size ?? '')
-      setColors(clothe.colors ?? (clothe.color ? [clothe.color] : []))
+      {
+        const names = clothe.colors ?? (clothe.color ? [clothe.color] : [])
+        const hexes = clothe.color_hexes ?? []
+        setColorSelections(names.map((n, i) => ({ name: n, hex: hexes[i] ?? colorHexByName(n) ?? '#999999' })))
+      }
       setMaterial(clothe.material ?? '')
       setTags(clothe.tags.join(', '))
       setNotes(clothe.notes ?? '')
@@ -99,7 +106,7 @@ export default function ClotheForm({
         })
     } else {
       setName(prefill?.name ?? '')
-      setCategoryId(''); setSelectedSeasonIds([]); setBrand(''); setSize(''); setColors([]); setMaterial('')
+      setCategoryId(''); setSelectedSeasonIds([]); setBrand(''); setSize(''); setColorSelections([]); setMaterial('')
       setTags('')
       setNotes(prefill?.notes ?? '')
       setPrice(prefill?.price != null ? String(prefill.price) : '')
@@ -137,7 +144,7 @@ export default function ClotheForm({
   // si la usuaria aún no ha elegido ningún color manualmente.
   useEffect(() => {
     if (!open) return
-    if (colors.length > 0) { setSuggestedColor(null); return }
+    if (colorSelections.length > 0) { setSuggestedColor(null); return }
     if (images.length === 0) { setSuggestedColor(null); return }
     const first = images[0]
     const src = previewOf(first)
@@ -147,7 +154,7 @@ export default function ClotheForm({
       if (!cancelled) setSuggestedColor(name)
     })
     return () => { cancelled = true }
-  }, [open, images, colors])
+  }, [open, images, colorSelections])
 
   /** Construye una prenda "virtual" con los valores actuales del formulario,
    *  para que el modal de descripción pueda generarse sin guardar todavía. */
@@ -167,13 +174,14 @@ export default function ClotheForm({
     sold_at: clothe?.sold_at ?? null,
     brand: brand.trim() || null,
     size: size.trim() || null,
-    color: colors[0] ?? null,  
-    colors,            
+    color: colorNames[0] ?? null,
+    colors: colorNames,
+    color_hexes: colorHexes,
     material: material.trim() || null,
     created_at: clothe?.created_at ?? new Date().toISOString(),
     updated_at: clothe?.updated_at ?? new Date().toISOString(),
     listed_at: clothe?.listed_at ?? null,
-  }), [clothe, user, name, categoryId, brand, size, colors, material, tags, notes, price, defaultStatus])
+  }), [clothe, user, name, categoryId, brand, size, colorSelections, material, tags, notes, price, defaultStatus])
 
   async function syncImages(clotheId: string, userId: string) {
     const stillThere = new Set(
@@ -215,8 +223,9 @@ export default function ClotheForm({
         category_id: categoryId || null,
         brand: brand.trim() || null,
         size: size.trim() || null,
-        color: colors[0] ?? null,  // se mantiene por backward compat con esquema antiguo
-        colors,
+        color: colorNames[0] ?? null,  // se mantiene por backward compat con esquema antiguo
+        colors: colorNames,
+        color_hexes: colorHexes,
         material: material.trim() || null,
         tags: tags.split(',').map((t) => t.trim()).filter(Boolean),
         notes: notes.trim() || null,
@@ -280,7 +289,7 @@ export default function ClotheForm({
         )}
         <MultiImagePicker images={images} onChange={setImages} />
         <p className="text-[11px] text-muted leading-relaxed -mt-1">
-          📸 Mejor resultado con el prettifier: fondo blanco o liso, buena luz natural, prenda extendida o en percha y encuadre centrado.
+          📸 Mejor resultado con el boton de mejora de imagen: fondo blanco o liso, buena luz natural, prenda extendida o en percha y encuadre centrado.
         </p>
 
         <div>
@@ -346,8 +355,13 @@ export default function ClotheForm({
 
         <div>
           <label className="label">Colores</label>
-          <ColorPicker value={colors} onChange={setColors} max={3} />
-          {suggestedColor && colors.length === 0 && !suggestionDismissed && (
+          <ColorPicker
+            value={colorSelections}
+            onChange={setColorSelections}
+            max={3}
+            imageUrl={images.length > 0 ? previewOf(images[0]) : null}
+          />
+          {suggestedColor && colorSelections.length === 0 && !suggestionDismissed && (
             <div className="mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-brand-soft text-brand-700 dark:text-brand-200 text-xs animate-fade-in">
               <Wand2 className="w-3.5 h-3.5 shrink-0" />
               <span className="flex-1">
@@ -365,7 +379,10 @@ export default function ClotheForm({
               </span>
               <button
                 type="button"
-                onClick={() => { setColors([suggestedColor]); setSuggestionDismissed(true) }}
+                onClick={() => {
+                  setColorSelections([{ name: suggestedColor, hex: colorHexByName(suggestedColor) ?? '#999999' }])
+                  setSuggestionDismissed(true)
+                }}
                 className="font-semibold underline shrink-0"
               >
                 Usar

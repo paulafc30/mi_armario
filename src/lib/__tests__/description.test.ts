@@ -26,6 +26,7 @@ function baseClothe(over: Partial<Clothe> = {}): Clothe {
     size: 'M',
     color: 'Blanco',
     colors: ['Blanco'],
+    color_hexes: ['#ffffff'],
     material: null,
     created_at: '',
     updated_at: '',

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical, Camera, Sparkles, Undo2 } from 'lucide-react'
+import { ImagePlus, X, Star, Link as LinkIcon, Plus, Loader2, GripVertical, Camera, Sparkles, Undo2, Info } from 'lucide-react'
 import { cx } from '@/lib/utils'
 import { compressImage } from '@/lib/imageCompression'
 import { usePrettify } from '@/hooks/usePrettify'
@@ -220,6 +220,13 @@ export default function MultiImagePicker({
 
   return (
     <div className="space-y-3">
+      {images.length > 0 && (
+        <p className="text-[11px] text-muted leading-relaxed flex items-start gap-1">
+          <Info className="w-3 h-3 shrink-0 mt-[1px]" />
+          La primera es la portada. Arrastra para reordenar o usa la estrella para cambiarla.
+        </p>
+      )}
+
       <div
         onDragEnter={handleGridDragOver}
         onDragOver={handleGridDragOver}
@@ -367,15 +374,6 @@ export default function MultiImagePicker({
         onChange={(e) => e.target.files && addFiles(e.target.files)}
       />
 
-      <button
-        type="button"
-        onClick={() => cameraRef.current?.click()}
-        disabled={processing}
-        className="btn-secondary w-full justify-center text-sm"
-      >
-        <Camera className="w-4 h-4" /> Tomar foto con la camara
-      </button>
-
       {/* Anadir por URL */}
       {urlMode ? (
         <div className="flex gap-2">
@@ -395,19 +393,23 @@ export default function MultiImagePicker({
           </button>
         </div>
       ) : (
-        <button type="button" onClick={() => setUrlMode(true)}
-          className="btn-ghost w-full justify-center text-sm">
-          <LinkIcon className="w-4 h-4" /> Anadir imagen por URL
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => cameraRef.current?.click()}
+            disabled={processing}
+            className="btn-secondary flex-1 justify-center text-sm"
+          >
+            <Camera className="w-4 h-4" /> Tomar foto
+          </button>
+          <button type="button" onClick={() => setUrlMode(true)}
+            className="btn-ghost flex-1 justify-center text-sm">
+            <LinkIcon className="w-4 h-4" /> Imagen por URL
+          </button>
+        </div>
       )}
 
       {error && <p className="text-xs text-amber-700 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-200 rounded-lg px-3 py-2">{error}</p>}
-
-      {images.length > 0 && (
-        <p className="text-xs text-muted text-center">
-          La primera es la portada. Arrastra para reordenar o usa la estrella para cambiarla.
-        </p>
-      )}
 
       {/* Portal del menú Prettify — fuera de overflow-hidden */}
       {prettifyMenuIdx !== null && prettifyMenuPos && createPortal(

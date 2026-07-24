@@ -66,6 +66,8 @@ export interface Clothe {
   /** @deprecated usar `colors` (array). Se mantiene para legacy/backfill. */
   color: string | null
   colors: string[]
+  /** Hex exacto elegido con el slider de tono, alineado por índice con `colors`. */
+  color_hexes: string[]
   material: string | null
   created_at: string
   updated_at: string
