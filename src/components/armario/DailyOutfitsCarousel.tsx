@@ -99,12 +99,21 @@ function DailyOutfitCard({ outfit }: { outfit: DailyOutfit }) {
   const [saved, setSaved] = useState(false)
   const [flagging, setFlagging] = useState(false)
   const [flaggedIds, setFlaggedIds] = useState<string[]>([])
+  const [naming, setNaming] = useState(false)
+  const [nameDraft, setNameDraft] = useState(outfit.name)
 
-  const handleSave = () => {
+  const handleSaveClick = () => {
+    if (saved) return
+    setNameDraft(outfit.name)
+    setNaming(true)
+  }
+
+  const confirmSave = () => {
     if (!user || saved) return
+    const finalName = nameDraft.trim() || outfit.name
     createOutfit.mutate(
-      { user_id: user.id, name: outfit.name, clothe_ids: outfit.items.map((i) => i.id) },
-      { onSuccess: () => setSaved(true) }
+      { user_id: user.id, name: finalName, clothe_ids: outfit.items.map((i) => i.id) },
+      { onSuccess: () => { setSaved(true); setNaming(false) } }
     )
   }
 
@@ -164,7 +173,37 @@ function DailyOutfitCard({ outfit }: { outfit: DailyOutfit }) {
           <p className="text-xs text-white/80 leading-relaxed line-clamp-2 mt-0.5">{outfit.reason}</p>
         </div>
 
-        {flagging ? (
+        {naming ? (
+          <div className="space-y-2 bg-black/40 backdrop-blur-sm rounded-xl p-2.5 border border-white/20">
+            <p className="text-[11px] text-white/90 font-medium">Nombre del outfit</p>
+            <input
+              type="text"
+              value={nameDraft}
+              onChange={(e) => setNameDraft(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && confirmSave()}
+              className="w-full text-sm rounded-lg px-2.5 py-1.5 bg-white/90 text-neutral-900 placeholder:text-neutral-500 outline-none"
+              placeholder={outfit.name}
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={confirmSave}
+                disabled={createOutfit.isPending}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs font-medium rounded-lg py-1.5 bg-white/90 text-neutral-900 hover:bg-white transition"
+              >
+                {createOutfit.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Guardar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setNaming(false)}
+                className="text-xs font-medium rounded-lg py-1.5 px-3 text-white/80 hover:text-white transition"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : flagging ? (
           <div className="space-y-2 bg-black/40 backdrop-blur-sm rounded-xl p-2.5 border border-white/20">
             <p className="text-[11px] text-white/90 font-medium">¿Qué prenda no encajaba? (opcional)</p>
             <div className="flex flex-wrap gap-1.5">
@@ -236,7 +275,7 @@ function DailyOutfitCard({ outfit }: { outfit: DailyOutfit }) {
               <ThumbsDown className="w-4 h-4" />
             </button>
             <button
-              onClick={handleSave}
+              onClick={handleSaveClick}
               disabled={saved || createOutfit.isPending}
               className={cx(
                 'flex-1 flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-2 border transition backdrop-blur-sm',

@@ -242,20 +242,40 @@ Deno.serve(async (req: Request) => {
       return lines.length > 0 ? `Historial para "${occasion}": ${lines.join(' ')}` : ''
     }
 
+    // Exclusión DURA (no solo instrucción al modelo) de las prendas usadas la
+    // última vez para esa ocasión: si el armario tiene alternativas de sobra,
+    // ni siquiera se las ofrecemos a la IA, así el "no repitas" deja de
+    // depender de que el modelo obedezca la instrucción. Si excluirlas deja
+    // muy pocas prendas (armario pequeño), no excluimos nada — ahí ya toca
+    // confiar en la instrucción de texto, repetir algo es preferible a un
+    // outfit incompleto.
+    function lastItemIdsFor(occasion: DailyOccasion): string[] {
+      const rows = (history ?? []).filter((h) => h.occasion === occasion)
+      return rows[0]?.item_ids ?? []
+    }
+    function poolExcluding(pool: typeof inventory, excludeIds: string[], minRemaining: number) {
+      if (excludeIds.length === 0) return pool
+      const filtered = pool.filter((i) => !excludeIds.includes(i.id))
+      return filtered.length >= minRemaining ? filtered : pool
+    }
+
     const nonGymStructureRule = `DEBE incluir: o bien 1 "top" + 1 "bottom", o bien 1 "fullbody" (vestido/mono). Opcional: 1 "outerwear" si el clima lo requiere, y maximo 1 "footwear" y 1 "accessory". PROHIBIDO mezclar swimwear. PROHIBIDO outfit sin parte de abajo.`
     const gymStructureRule = `DEBE incluir: 1 prenda deportiva (tipo sportswear) + opcionalmente calzado deportivo. NO uses top/bottom normales ni accesorios innecesarios.`
 
     const sections: string[] = []
     if (missingNonGym.length > 0) {
       const historyNotes = missingNonGym.map(historyNoteFor).filter(Boolean).join('\n')
+      const excludeIds = missingNonGym.flatMap(lastItemIdsFor)
+      const pool = poolExcluding(nonGymItems, excludeIds, 6)
       sections.push(`OCASIONES "${missingNonGym.join('" y "')}" (misma lista de prendas para ambas, pero cada una es un outfit DISTINTO):
-Prendas disponibles: ${JSON.stringify(toCompact(nonGymItems))}
+Prendas disponibles: ${JSON.stringify(toCompact(pool))}
 Regla de estructura: ${nonGymStructureRule}${historyNotes ? `\n${historyNotes}` : ''}`)
     }
     if (missing.includes('gym')) {
       const historyNotes = historyNoteFor('gym')
+      const pool = poolExcluding(gymItems, lastItemIdsFor('gym'), 3)
       sections.push(`OCASION "gym":
-Prendas disponibles: ${JSON.stringify(toCompact(gymItems))}
+Prendas disponibles: ${JSON.stringify(toCompact(pool))}
 Regla de estructura: ${gymStructureRule}${historyNotes ? `\n${historyNotes}` : ''}`)
     }
 

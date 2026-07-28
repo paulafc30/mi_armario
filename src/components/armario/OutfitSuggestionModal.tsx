@@ -37,12 +37,21 @@ function OutfitCard({ outfit, index }: { outfit: SuggestedOutfit; index: number 
   const { user } = useAuth()
   const createOutfit = useCreateOutfit()
   const [saved, setSaved] = useState(false)
+  const [naming, setNaming] = useState(false)
+  const [nameDraft, setNameDraft] = useState(outfit.name)
 
-  const handleSave = () => {
+  const handleSaveClick = () => {
+    if (saved) return
+    setNameDraft(outfit.name)
+    setNaming(true)
+  }
+
+  const confirmSave = () => {
     if (!user || saved) return
+    const finalName = nameDraft.trim() || outfit.name
     createOutfit.mutate(
-      { user_id: user.id, name: outfit.name, clothe_ids: outfit.items.map((i) => i.id) },
-      { onSuccess: () => setSaved(true) }
+      { user_id: user.id, name: finalName, clothe_ids: outfit.items.map((i) => i.id) },
+      { onSuccess: () => { setSaved(true); setNaming(false) } }
     )
   }
 
@@ -65,30 +74,63 @@ function OutfitCard({ outfit, index }: { outfit: SuggestedOutfit; index: number 
         )}
       </div>
       <p className="text-xs text-muted leading-relaxed">{outfit.reason}</p>
-      <button
-        onClick={handleSave}
-        disabled={saved || createOutfit.isPending}
-        className={cx(
-          'w-full flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-1.5 border transition',
-          saved
-            ? 'bg-green-50 dark:bg-green-500/10 border-green-200 text-green-700 cursor-default'
-            : 'btn-secondary'
-        )}
-      >
-        {saved ? (
-          <>
-            <Check className="w-3.5 h-3.5" /> Guardado en Outfits
-          </>
-        ) : createOutfit.isPending ? (
-          <>
-            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
-          </>
-        ) : (
-          <>
-            <BookmarkPlus className="w-3.5 h-3.5" /> Guardar en Outfits
-          </>
-        )}
-      </button>
+
+      {naming ? (
+        <div className="space-y-2 p-2.5 rounded-xl bg-surface-soft border border-line-soft">
+          <p className="text-[11px] text-muted font-medium">Nombre del outfit</p>
+          <input
+            type="text"
+            value={nameDraft}
+            onChange={(e) => setNameDraft(e.target.value)}
+            autoFocus
+            onKeyDown={(e) => e.key === 'Enter' && confirmSave()}
+            className="input text-sm"
+            placeholder={outfit.name}
+          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={confirmSave}
+              disabled={createOutfit.isPending}
+              className="btn-primary flex-1 justify-center text-xs py-1.5"
+            >
+              {createOutfit.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Guardar'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setNaming(false)}
+              className="btn-ghost text-xs py-1.5 px-3"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={handleSaveClick}
+          disabled={saved || createOutfit.isPending}
+          className={cx(
+            'w-full flex items-center justify-center gap-1.5 text-xs font-medium rounded-xl py-1.5 border transition',
+            saved
+              ? 'bg-green-50 dark:bg-green-500/10 border-green-200 text-green-700 cursor-default'
+              : 'btn-secondary'
+          )}
+        >
+          {saved ? (
+            <>
+              <Check className="w-3.5 h-3.5" /> Guardado en Outfits
+            </>
+          ) : createOutfit.isPending ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Guardando...
+            </>
+          ) : (
+            <>
+              <BookmarkPlus className="w-3.5 h-3.5" /> Guardar en Outfits
+            </>
+          )}
+        </button>
+      )}
     </div>
   )
 }
