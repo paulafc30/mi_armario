@@ -1,4 +1,4 @@
-# Mi Armario — Documentación
+# Miss Outfits — Documentación
 
 Bienvenida al hub de documentación del proyecto. Este directorio es **la guía de supervivencia** del repo. Si alguien (humano o IA) llega nuevo, leer estos cuatro archivos cubre el 80% de las preguntas.
 
@@ -13,13 +13,13 @@ Bienvenida al hub de documentación del proyecto. Este directorio es **la guía 
 | [`../ROADMAP.md`](../ROADMAP.md) | Estado vivo: lo implementado, en curso, pendiente y backlog. |
 | [`../.cursorrules`](../.cursorrules) | Reglas para que las IAs editen código respetando convenciones. |
 
-## Qué es Mi Armario
+## Qué es Miss Outfits
 
 App web personal para **organizar la ropa, gestionar lo que pones a la venta en Wallapop/Vinted, mantener una lista de deseos y planificar outfits**. Pensada para uso individual (no SaaS multiusuario), aunque la arquitectura es multi-tenant gracias a Row Level Security de Supabase.
 
 Las cinco secciones son:
 
-- **Mi Armario** — galería de prendas con categorías, outfits y un calendario de "qué llevé / qué llevaré hoy".
+- **Mi Armario** (sección) — galería de prendas con categorías, outfits y un calendario de "qué llevé / qué llevaré hoy".
 - **A la Venta** — flujo Baúl → En Venta → Vendida → Archivada con toggles Wallapop/Vinted y tracker de días publicada.
 - **Lista de Deseos** — items organizados en listas (Verano, Regalos, Rebajas…), con preview automático de URL.
 - **Ideas** (Inspiración) — atajos a boards de Pinterest y secciones de novedades de tiendas favoritas.

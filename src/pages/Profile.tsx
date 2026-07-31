@@ -231,7 +231,7 @@ export default function Profile() {
       <p className="text-center text-xs text-muted pb-2">
         Hecho con cuidado por{' '}
         <a href="https://ferava.dev" target="_blank" rel="noreferrer" className="font-semibold text-brand-700 hover:underline">
-          Ferava
+          Desarrollos Ferava
         </a>
       </p>
 

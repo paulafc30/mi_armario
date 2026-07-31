@@ -146,7 +146,7 @@ export default function Venta() {
   const bookmarkletHref = syncTab === 'vinted'
     ? generateVintedBookmarklet(origin)
     : generateWallapopBookmarklet(origin)
-  const bookmarkletLabel = `Mi Armario — ${activePlatform.label} ↗`
+  const bookmarkletLabel = `Miss Outfits — ${activePlatform.label} ↗`
 
   return (
     <div className="px-4 pb-4 space-y-5">

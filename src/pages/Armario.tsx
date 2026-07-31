@@ -96,7 +96,7 @@ export default function Armario() {
       <PlannedTodayBanner />
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h1 className="heading-xl">Mi Armario</h1>
+          <h1 className="heading-xl">Miss Outfits</h1>
           <p className="text-sm text-muted mt-0.5">{clothes.length} prendas · {outfits.length} outfits</p>
         </div>
         <div className="flex gap-2">

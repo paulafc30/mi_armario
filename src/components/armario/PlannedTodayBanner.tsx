@@ -4,7 +4,7 @@ import { useTodayPlannedWears, useUpdateWear } from '@/hooks/useWears'
 import { cx } from '@/lib/utils'
 
 /**
- * Banner que aparece en la cabecera de Mi Armario cuando hay outfits o
+ * Banner que aparece en la cabecera de Miss Outfits cuando hay outfits o
  * prendas planeadas para hoy. Permite confirmarlas como llevadas (quita
  * el flag planned) o descartar el aviso (solo en la sesión actual).
  */

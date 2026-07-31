@@ -140,7 +140,7 @@ Mismo patrón para `outfit_images` con su propio trigger `sync_outfit_cover_imag
 Usuaria comparte desde Wallapop/Vinted/Zara/etc.
     │
     ▼
-OS muestra Mi Armario en el chooser (gracias a manifest.share_target)
+OS muestra Miss Outfits en el chooser (gracias a manifest.share_target)
     │
     ▼
 Navegador abre /share?title=…&text=…&url=…

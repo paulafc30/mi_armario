@@ -110,8 +110,8 @@ export async function exportArmario() {
     outfits: outfitRows,
     historial_looks: wearRows,
   }
-  downloadFile(JSON.stringify(bundle, null, 2), `mi-armario-${now}.json`, 'application/json')
+  downloadFile(JSON.stringify(bundle, null, 2), `miss-outfits-${now}.json`, 'application/json')
 
   // Also export clothes CSV
-  downloadFile(toCsv(clotheRows), `mi-armario-prendas-${now}.csv`, 'text/csv;charset=utf-8;')
+  downloadFile(toCsv(clotheRows), `miss-outfits-prendas-${now}.csv`, 'text/csv;charset=utf-8;')
 }

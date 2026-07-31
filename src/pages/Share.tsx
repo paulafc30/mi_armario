@@ -34,7 +34,7 @@ export default function Share() {
     <div className="max-w-md mx-auto px-4 pb-6 space-y-6">
       <div>
         <h1 className="heading-xl">¿Dónde lo guardo?</h1>
-        <p className="text-sm text-muted mt-1">Has compartido algo a Mi Armario.</p>
+        <p className="text-sm text-muted mt-1">Has compartido algo a Miss Outfits.</p>
       </div>
 
       <div className="card p-4 space-y-2">

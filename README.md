@@ -1,4 +1,4 @@
-# Mi Armario
+# Miss Outfits
 
 App web para gestionar tu ropa: armario digital, ropa a la venta (Wallapop / Vinted) y lista de deseos.
 
@@ -83,7 +83,7 @@ mi-armario/
 
 ## Funcionalidades
 
-### Mi Armario
+### Mi Armario (sección)
 - Galería de prendas con foto, nombre, categoría, etiquetas y notas.
 - Categorías editables (CRUD) con colores personalizables.
 - **Outfits**: agrupar prendas como colecciones (selección múltiple).

@@ -1,6 +1,6 @@
 {
-  "name": "Mi Armario",
-  "short_name": "Mi Armario",
+  "name": "Miss Outfits",
+  "short_name": "Miss Outfits",
   "description": "Tu ropa, organizada: armario digital, ropa a la venta y lista de deseos.",
   "start_url": "/armario",
   "scope": "/",

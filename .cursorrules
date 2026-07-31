@@ -3,7 +3,7 @@
 
 ## Contexto del proyecto
 
-Mi Armario es una PWA personal de gestión de armario, ventas (Wallapop/Vinted),
+Miss Outfits (antes "Mi Armario") es una PWA personal de gestión de armario, ventas (Wallapop/Vinted),
 lista de deseos, inspiración y planificación de outfits. Una sola usuaria
 hispanohablante, frontend React + Vite + TS + Tailwind, backend Supabase
 (Auth + Postgres + Storage). Sin SSR, sin backend propio. Documentación

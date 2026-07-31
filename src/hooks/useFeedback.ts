@@ -4,7 +4,7 @@ import { useAuth } from './useAuth'
 
 const WEB3FORMS_KEY = import.meta.env.VITE_WEB3FORMS_KEY as string | undefined
 const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit'
-const APP_NAME = 'Mi Armario'
+const APP_NAME = 'Miss Outfits'
 const APP_VERSION = '0.2.0'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -77,7 +77,7 @@ export function useSubmitFeedback() {
               access_key: WEB3FORMS_KEY,
               subject: `[${APP_NAME}] ${typeLabel}`,
               from_name: `${APP_NAME} — ${typeLabel}`,
-              email: replyEmail || `noreply@miarmario.app`,
+              email: replyEmail || `noreply@missoutfits.app`,
               message: bodyText,
               botcheck: '',
             }),

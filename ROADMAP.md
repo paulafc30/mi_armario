@@ -1,4 +1,4 @@
-# Mi Armario — Roadmap y notas
+# Miss Outfits — Roadmap y notas
 
 > Documento vivo. Aquí queda registrado **todo** lo que se ha construido,
 > lo que está en curso, lo que está pendiente y las ideas para el futuro.

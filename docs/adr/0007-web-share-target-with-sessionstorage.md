@@ -5,7 +5,7 @@
 
 ## Contexto
 
-Queríamos que la usuaria pudiera **compartir desde otra app** (Wallapop, Vinted, Zara, Instagram, Pinterest, etc.) y que el contenido fuera a Mi Armario. El estándar es Web Share Target API de PWAs.
+Queríamos que la usuaria pudiera **compartir desde otra app** (Wallapop, Vinted, Zara, Instagram, Pinterest, etc.) y que el contenido fuera a Miss Outfits. El estándar es Web Share Target API de PWAs.
 
 Cuando un sitio web está instalado como PWA y declara `share_target` en su manifest, aparece en el "Compartir con…" del sistema operativo. Al elegirlo, el navegador navega a la URL declarada con los datos como query params.
 
@@ -54,7 +54,7 @@ El formulario destino entonces puede llamar a `fetchUrlPreview(url)` (microlink)
 
 ### Procesar todo en `/share` y enviar al backend
 
-Sin backend → no aplica. Si tuviéramos Edge Functions, podríamos crear la prenda directamente desde `/share` y enviar a Mi Armario. Pero es más complicado y menos reversible para la usuaria (no puede editar antes de guardar).
+Sin backend → no aplica. Si tuviéramos Edge Functions, podríamos crear la prenda directamente desde `/share` y enviar a Miss Outfits. Pero es más complicado y menos reversible para la usuaria (no puede editar antes de guardar).
 
 ### POST en lugar de GET en el share_target
 

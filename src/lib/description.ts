@@ -164,7 +164,7 @@ function slug(s: string): string {
 
 /**
  * Descripción de PRODUCTO (ficha catalográfica). Neutra, descriptiva,
- * sin tono comercial ni precio ni cierre. Útil dentro de Mi Armario
+ * sin tono comercial ni precio ni cierre. Útil dentro de Miss Outfits
  * para tener una mini-ficha de la prenda lista para copiar/compartir.
  */
 export function generateProductDescription(clothe: Clothe, category?: Category): string {
