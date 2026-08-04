@@ -144,7 +144,7 @@ function DailyOutfitCard({ outfit }: { outfit: DailyOutfit }) {
   }
 
   return (
-    <div className="relative w-full aspect-[3/4.5] rounded-3xl overflow-hidden shadow-soft">
+    <div className="relative w-[80%] shrink-0 snap-center sm:w-full sm:shrink sm:snap-align-none aspect-[3/4.5] rounded-3xl overflow-hidden shadow-soft">
       <div className="absolute inset-0" style={{ backgroundColor: '#F3EDE8' }}>
         <OutfitCollage items={outfit.items} />
       </div>
@@ -307,7 +307,7 @@ function MissingOutfitCard({ occasion, onRetry, retrying }: { occasion: DailyOcc
   const meta = OCCASION_META[occasion]
   const Icon = meta.icon
   return (
-    <div className="relative w-full aspect-[3/4.5] rounded-3xl overflow-hidden border border-dashed border-line bg-surface-soft flex flex-col items-center justify-center gap-3 p-4 text-center">
+    <div className="relative w-[80%] shrink-0 snap-center sm:w-full sm:shrink sm:snap-align-none aspect-[3/4.5] rounded-3xl overflow-hidden border border-dashed border-line bg-surface-soft flex flex-col items-center justify-center gap-3 p-4 text-center">
       <Icon className="w-8 h-8 text-muted/50" />
       <div>
         <p className="text-sm font-medium text-ink">{meta.label}</p>
@@ -351,7 +351,7 @@ export default function DailyOutfitsCarousel() {
       )}
 
       {!isLoading && !error && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="flex gap-3 overflow-x-auto no-scrollbar snap-x snap-mandatory -mx-4 px-4 pb-1 sm:grid sm:grid-cols-3 sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0">
           {DAILY_OCCASIONS.map((occasion) =>
             byOccasion[occasion] ? (
               <DailyOutfitCard key={occasion} outfit={byOccasion[occasion]} />

@@ -163,31 +163,27 @@ function AddSeasonForm({ onClose }: { onClose: () => void }) {
   )
 }
 
-export default function SeasonTab() {
+export default function SeasonTab({
+  addingNew,
+  onCloseAdd,
+}: {
+  addingNew: boolean
+  onCloseAdd: () => void
+}) {
   const { data: seasons = [], isLoading } = useSeasons()
   const { data: clothes = [] } = useClothes(['closet', 'baul'])
   const { data: clotheSeasonMap = {} } = useClotheSeasons()
   const { mutate: deleteSeason } = useDeleteSeason()
-  const [addingNew, setAddingNew] = useState(false)
 
   if (isLoading) return <p className="text-center text-muted py-12">Cargando…</p>
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-muted">
-          Organiza tu armario por temporada. Edita cada prenda para asignarle varias.
-        </p>
-        <button
-          type="button"
-          onClick={() => setAddingNew(true)}
-          className="btn-secondary text-sm shrink-0"
-        >
-          <Plus className="w-4 h-4" /> Temporada
-        </button>
-      </div>
+      <p className="text-xs text-muted">
+        Organiza tu armario por temporada. Edita cada prenda para asignarle varias.
+      </p>
 
-      {addingNew && <AddSeasonForm onClose={() => setAddingNew(false)} />}
+      {addingNew && <AddSeasonForm onClose={onCloseAdd} />}
 
       {seasons.map((season) => (
         <SeasonFolder

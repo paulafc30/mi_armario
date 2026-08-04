@@ -28,7 +28,15 @@ export default function Armario() {
   const { data: clothes = [], isLoading } = useClothes(['closet'])
   const { data: categories = [] } = useCategories()
   const { data: outfits = [] } = useOutfits()
-  const { query, filters } = useSearchStore()
+  const { query, filters, setFiltersEnabled } = useSearchStore()
+
+  // El panel de filtros (colores/talla/tejido/marca) solo existe en el DOM
+  // dentro de la tab "Prendas" — avisamos a la barra de búsqueda global para
+  // que solo muestre el botón de filtro mientras esté disponible.
+  useEffect(() => {
+    setFiltersEnabled(tab === 'prendas')
+    return () => setFiltersEnabled(false)
+  }, [tab, setFiltersEnabled])
 
   const [filterCat, setFilterCat] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
@@ -51,6 +59,7 @@ export default function Armario() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [selected, setSelected] = useState<Clothe | null>(null)
   const [catModal, setCatModal] = useState(false)
+  const [seasonFormOpen, setSeasonFormOpen] = useState(false)
   const [outfitFormOpen, setOutfitFormOpen] = useState(false)
   const [outfitEditing, setOutfitEditing] = useState<OutfitWithItems | null>(null)
   const [outfitSuggestOpen, setOutfitSuggestOpen] = useState(false)
@@ -100,15 +109,15 @@ export default function Armario() {
           <p className="text-sm text-muted mt-0.5">{clothes.length} prendas · {outfits.length} outfits</p>
         </div>
         <div className="flex gap-2">
-          {tab !== 'calendario' && (
-            <button onClick={() => setCatModal(true)} className="btn-secondary" title="Categorías">
-              <Settings2 className="w-4 h-4" />
-            </button>
-          )}
           {tab === 'prendas' && (
-            <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
-              <Plus className="w-4 h-4" /> Añadir
-            </button>
+            <>
+              <button onClick={() => setCatModal(true)} className="btn-secondary" title="Categorías">
+                <Settings2 className="w-4 h-4" />
+              </button>
+              <button onClick={() => { setEditing(null); setFormOpen(true) }} className="btn-primary">
+                <Plus className="w-4 h-4" /> Añadir
+              </button>
+            </>
           )}
           {tab === 'outfits' && (
             <>
@@ -119,6 +128,11 @@ export default function Armario() {
                 <Plus className="w-4 h-4" /> Outfit
               </button>
             </>
+          )}
+          {tab === 'temporada' && (
+            <button onClick={() => setSeasonFormOpen(true)} className="btn-primary">
+              <Plus className="w-4 h-4" /> Temporada
+            </button>
           )}
         </div>
       </div>
@@ -163,9 +177,9 @@ export default function Armario() {
             })}
           </div>
 
-          <DailyOutfitsCarousel />
-
           <SearchFilterPanel brands={uniqueBrands} />
+
+          <DailyOutfitsCarousel />
 
           {isLoading ? (
             <p className="text-center text-muted py-12">Cargando…</p>
@@ -198,7 +212,9 @@ export default function Armario() {
       )}
 
       {tab === 'calendario' && <CalendarTab />}
-      {tab === 'temporada' && <SeasonTab />}
+      {tab === 'temporada' && (
+        <SeasonTab addingNew={seasonFormOpen} onCloseAdd={() => setSeasonFormOpen(false)} />
+      )}
 
       {tab === 'outfits' && (
         outfits.length === 0 ? (

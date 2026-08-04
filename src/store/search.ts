@@ -19,6 +19,16 @@ interface SearchState {
   setQuery: (q: string) => void
   filtersOpen: boolean
   setFiltersOpen: (open: boolean) => void
+  /**
+   * El botón de filtro vive en la barra de búsqueda global (AppShell), visible
+   * en todas las páginas, pero el panel de filtros solo existe en el DOM
+   * dentro de la tab "Prendas" de Armario. Sin este flag, el botón parecía
+   * "no desplegarse" en cualquier otra página/tab porque no había nada que
+   * mostrar. Cada página que renderiza el panel debe activarlo mientras esté
+   * montado (y desactivarlo al desmontarse).
+   */
+  filtersEnabled: boolean
+  setFiltersEnabled: (enabled: boolean) => void
   filters: SearchFilters
   toggleFilter: (key: keyof SearchFilters, value: string) => void
   clearFilters: () => void
@@ -31,6 +41,9 @@ export const useSearchStore = create<SearchState>((set, get) => ({
 
   filtersOpen: false,
   setFiltersOpen: (filtersOpen) => set({ filtersOpen }),
+
+  filtersEnabled: false,
+  setFiltersEnabled: (filtersEnabled) => set(filtersEnabled ? { filtersEnabled } : { filtersEnabled, filtersOpen: false }),
 
   filters: EMPTY_FILTERS,
   toggleFilter: (key, value) => {
